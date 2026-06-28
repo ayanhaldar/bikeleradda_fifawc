@@ -65,24 +65,22 @@ input:focus{border-color:#00D563}
 .badge-ns{background:#1A2A3A;color:#6B7A99;font-size:9px;padding:2px 7px;border-radius:20px}
 .pw-box{background:#0A0E1A;border:2px solid #00D563;border-radius:10px;padding:12px;text-align:center;margin:12px 0}
 .ctag{color:#60A5FA;font-size:9px;font-weight:700;background:#0D1A2A;border:1px solid #1F3A52;padding:1px 6px;border-radius:10px;margin-right:5px}
-/* Results tab */
 .res-match{background:#111827;border:1.5px solid #1A3A2A;border-radius:16px;overflow:hidden;margin-bottom:16px}
 .res-head{background:#0D1525;border-bottom:1px solid #1F2D42;padding:12px 16px}
-.res-score{text-align:center;padding:8px 0}
 .res-num{font-size:30px;font-weight:900;color:#00D563}
 .player-row{padding:10px 16px;border-bottom:1px solid #1F2D42}
 .player-row:last-child{border-bottom:none}
 .player-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
 .player-name{color:#00D563;font-weight:700;font-size:14px}
-.player-pts{font-weight:900;font-size:16px;padding:3px 10px;border-radius:16px}
-.pts-hi{background:#0D2E1E;color:#00D563}
-.pts-mid{background:#1A2A0A;color:#BFDB38}
-.pts-lo{background:#1A0808;color:#F87171}
 .ans-grid{display:flex;flex-wrap:wrap;gap:4px}
 .ans-item{font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #1F2D42;background:#0A0E1A}
 .ans-ok{border-color:#1A3A2A;background:#0D2E1E;color:#00D563}
 .ans-bad{border-color:#3A1A1A;background:#1A0808;color:#F87171}
 .ans-k{color:#4A5568}
+.sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#4A5568;margin-right:4px;vertical-align:middle}
+.sync-dot.ok{background:#00D563}
+.sync-dot.busy{background:#F59E0B;animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
 </head>
 <body>
@@ -105,7 +103,7 @@ input:focus{border-color:#00D563}
         <div style="text-align:center;margin-top:10px"><button onclick="showAdminLogin()" style="background:none;border:none;color:#4A5568;font-size:11px;cursor:pointer">Admin login</button></div>
       </div>
       <div id="stepNew" style="display:none">
-        <div style="color:#6B7A99;font-size:12px;margin-bottom:10px">Welcome <strong id="newName" style="color:#fff"></strong>! Auto-generated password — <strong style="color:#F59E0B">save it to log back in.</strong></div>
+        <div style="color:#6B7A99;font-size:12px;margin-bottom:10px">Welcome <strong id="newName" style="color:#fff"></strong>! Auto-generated password — <strong style="color:#F59E0B">save it!</strong></div>
         <div class="pw-box">
           <div style="color:#6B7A99;font-size:10px;font-weight:600;letter-spacing:1px;margin-bottom:4px">YOUR PASSWORD</div>
           <div id="genPw" style="color:#00D563;font-size:28px;font-weight:900;letter-spacing:4px"></div>
@@ -141,7 +139,7 @@ input:focus{border-color:#00D563}
       <span id="adminBadge" style="display:none;background:#F59E0B;color:#0A0E1A;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px">ADMIN</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span id="fetchingIndicator" style="display:none;color:#60A5FA;font-size:10px">🔄 Fetching results…</span>
+      <span id="syncLabel" style="font-size:10px;color:#4A5568"><span class="sync-dot" id="syncDot"></span><span id="syncText">Syncing…</span></span>
       <button onclick="logout()" style="background:none;border:none;color:#4A5568;font-size:11px;cursor:pointer">Sign out</button>
     </div>
   </div>
@@ -173,11 +171,10 @@ input:focus{border-color:#00D563}
     <div style="height:20px"></div>
   </div>
 
-  <!-- RESULTS TAB — public after match is over + result exists -->
   <div id="t-results" class="wrap" style="padding-top:12px;display:none">
     <div class="hdr">
       <h2 style="font-size:20px;font-weight:800">📊 Match Results</h2>
-      <p style="color:#6B7A99;font-size:11px">Full transparency · Visible after match + scores evaluated</p>
+      <p style="color:#6B7A99;font-size:11px">Visible after match ends + result fetched</p>
     </div>
     <div class="dstrip" id="rStrip"></div>
     <div id="rContent"></div>
@@ -196,18 +193,30 @@ input:focus{border-color:#00D563}
 
   <div id="t-admin" class="wrap" style="padding-top:12px;display:none">
     <div class="hdr"><h2 style="font-size:20px;font-weight:800">🔧 Admin Panel</h2></div>
-    <div class="dstrip" id="aStrip"></div>
-    <div style="background:#0D1A2A;border:1.5px solid #1F3A52;border-radius:14px;padding:14px;margin-bottom:12px">
-      <div style="color:#60A5FA;font-size:12px;font-weight:700;margin-bottom:4px">🔄 Match Results (Auto-fetched)</div>
-      <div style="color:#4A5568;font-size:10px;margin-bottom:10px">Results auto-fetch when match ends. Manual trigger available below.</div>
+
+    <!-- Sync status & refresh -->
+    <div style="background:#0D1525;border:1.5px solid #1F3A52;border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="color:#60A5FA;font-size:12px;font-weight:700">☁️ Google Sheet Sync</div>
+          <div id="sheetStatus" style="color:#4A5568;font-size:10px;margin-top:2px">Checking connection…</div>
+        </div>
+        <button onclick="adminRefresh()" style="background:#0D2E1E;border:1px solid #00D563;color:#00D563;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">🔄 Refresh All</button>
+      </div>
       <div id="adminResultsDiv"></div>
     </div>
+
+    <!-- All players predictions -->
     <div style="background:#1A0A0A;border:1.5px solid #3A1A1A;border-radius:14px;padding:14px;margin-bottom:12px">
-      <div style="color:#F87171;font-size:12px;font-weight:700;margin-bottom:4px">👥 All Players · Answers & Scores</div>
-      <div style="color:#4A5568;font-size:10px;margin-bottom:10px">Admin only — detailed view of everyone's predictions</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="color:#F87171;font-size:12px;font-weight:700">👥 All Players · Answers & Scores</div>
+      </div>
+      <div style="color:#4A5568;font-size:10px;margin-bottom:10px">Admin only — all devices synced via Google Sheet</div>
       <div class="dstrip" id="adminPredsStrip"></div>
       <div id="adminAllPredsDiv"></div>
     </div>
+
+    <!-- Users -->
     <div style="background:#0A0A1A;border:1.5px solid #1F1F42;border-radius:14px;padding:14px">
       <div style="color:#A78BFA;font-size:12px;font-weight:700;margin-bottom:10px">🗑️ Manage Users</div>
       <div id="adminUsersDiv"></div>
@@ -258,215 +267,264 @@ input:focus{border-color:#00D563}
 </div>
 
 <script>
-// ─── CONFIGURATION — replace with your deployed Apps Script URL ─────────────
-const SCRIPT_URL = "https://script.google.com/macros/d/AKfycbyek6u_rjacax5ze__0diP8JsZJRKXHTO7ZHYInP9-W/usercallable";
-  //
-// HOW TO GET YOUR_DEPLOYMENT_ID:
-//  1. Go to script.google.com → New project → paste Code.gs
-//  2. Deploy → New Deployment → Web App
-//     • Execute as: Me   • Who has access: Anyone
-//  3. Copy the URL — it ends with /usercallable
-//  4. Paste the full URL above (replace the placeholder)
-// ────────────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// ① PASTE YOUR GOOGLE APPS SCRIPT URL BELOW (from Code.gs deployment)
+// ══════════════════════════════════════════════════════════════════════
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztO3sEGuM4zMdRpIGMGL3UXMhI2_wVI4gHkijtdXwVM34QPs5z4uNmCI5yqEhK6M-XCw/exec";
+// Example: "https://script.google.com/macros/d/AKfycbx.../exec"
+// If blank, app works locally only (predictions NOT shared across devices)
+// ══════════════════════════════════════════════════════════════════════
 
-const ADMIN_PW="bikeler2026";
-const ADMIN_NAME="Admin";
+const ADMIN_PW  = "bikeler2026";
+const ADMIN_NAME= "Admin";
 
-// ═══════════════════════════════════
-// SCHEDULE — All 16 confirmed R32 matches
-// ═══════════════════════════════════
 const S={
- "2026-06-28":[
-  {id:"m73",t1:"South Africa",t2:"Canada",       time:"3:00 PM",ko:"2026-06-28T19:00:00Z",venue:"SoFi Stadium, LA"},
- ],
+ "2026-06-28":[{id:"m73",t1:"South Africa",t2:"Canada",       time:"3:00 PM",ko:"2026-06-28T19:00:00Z",venue:"SoFi Stadium, LA"}],
  "2026-06-29":[
-  {id:"m76",t1:"Brazil",       t2:"Japan",         time:"1:00 PM",ko:"2026-06-29T17:00:00Z",venue:"NRG Stadium, Houston"},
-  {id:"m74",t1:"Germany",      t2:"Paraguay",       time:"4:30 PM",ko:"2026-06-29T20:30:00Z",venue:"Gillette Stadium, Boston"},
-  {id:"m75",t1:"Netherlands",  t2:"Morocco",        time:"9:00 PM",ko:"2026-06-30T01:00:00Z",venue:"Estadio BBVA, Monterrey"},
+  {id:"m76",t1:"Brazil",      t2:"Japan",        time:"1:00 PM", ko:"2026-06-29T17:00:00Z",venue:"NRG Stadium, Houston"},
+  {id:"m74",t1:"Germany",     t2:"Paraguay",     time:"4:30 PM", ko:"2026-06-29T20:30:00Z",venue:"Gillette Stadium, Boston"},
+  {id:"m75",t1:"Netherlands", t2:"Morocco",      time:"9:00 PM", ko:"2026-06-30T01:00:00Z",venue:"Estadio BBVA, Monterrey"},
  ],
  "2026-06-30":[
-  {id:"m78",t1:"Ivory Coast",  t2:"Norway",         time:"1:00 PM",ko:"2026-06-30T17:00:00Z",venue:"AT&T Stadium, Dallas"},
-  {id:"m77",t1:"France",       t2:"Sweden",          time:"5:00 PM",ko:"2026-06-30T21:00:00Z",venue:"MetLife Stadium, NJ"},
-  {id:"m79",t1:"Mexico",       t2:"Ecuador",         time:"9:00 PM",ko:"2026-07-01T01:00:00Z",venue:"Estadio Azteca, Mexico City"},
+  {id:"m78",t1:"Ivory Coast", t2:"Norway",       time:"1:00 PM", ko:"2026-06-30T17:00:00Z",venue:"AT&T Stadium, Dallas"},
+  {id:"m77",t1:"France",      t2:"Sweden",       time:"5:00 PM", ko:"2026-06-30T21:00:00Z",venue:"MetLife Stadium, NJ"},
+  {id:"m79",t1:"Mexico",      t2:"Ecuador",      time:"9:00 PM", ko:"2026-07-01T01:00:00Z",venue:"Estadio Azteca, Mexico City"},
  ],
  "2026-07-01":[
-  {id:"m80",t1:"England",      t2:"DR Congo",        time:"12:00 PM",ko:"2026-07-01T16:00:00Z",venue:"Mercedes-Benz, Atlanta"},
-  {id:"m82",t1:"Belgium",      t2:"Senegal",         time:"4:00 PM",ko:"2026-07-01T20:00:00Z",venue:"Lumen Field, Seattle"},
-  {id:"m81",t1:"USA",          t2:"Bosnia & Herz.", time:"8:00 PM",ko:"2026-07-02T00:00:00Z",venue:"Levi's Stadium, Santa Clara"},
+  {id:"m80",t1:"England",     t2:"DR Congo",     time:"12:00 PM",ko:"2026-07-01T16:00:00Z",venue:"Mercedes-Benz, Atlanta"},
+  {id:"m82",t1:"Belgium",     t2:"Senegal",      time:"4:00 PM", ko:"2026-07-01T20:00:00Z",venue:"Lumen Field, Seattle"},
+  {id:"m81",t1:"USA",         t2:"Bosnia & Herz.",time:"8:00 PM",ko:"2026-07-02T00:00:00Z",venue:"Levi's Stadium, Santa Clara"},
  ],
  "2026-07-02":[
-  {id:"m84",t1:"Spain",        t2:"Austria",         time:"3:00 PM",ko:"2026-07-02T19:00:00Z",venue:"SoFi Stadium, LA"},
-  {id:"m83",t1:"Portugal",     t2:"Croatia",         time:"7:00 PM",ko:"2026-07-02T23:00:00Z",venue:"BMO Field, Toronto"},
-  {id:"m85",t1:"Switzerland",  t2:"Algeria",         time:"11:00 PM",ko:"2026-07-03T03:00:00Z",venue:"BC Place, Vancouver"},
+  {id:"m84",t1:"Spain",       t2:"Austria",      time:"3:00 PM", ko:"2026-07-02T19:00:00Z",venue:"SoFi Stadium, LA"},
+  {id:"m83",t1:"Portugal",    t2:"Croatia",      time:"7:00 PM", ko:"2026-07-02T23:00:00Z",venue:"BMO Field, Toronto"},
+  {id:"m85",t1:"Switzerland", t2:"Algeria",      time:"11:00 PM",ko:"2026-07-03T03:00:00Z",venue:"BC Place, Vancouver"},
  ],
  "2026-07-03":[
-  {id:"m88",t1:"Australia",    t2:"Egypt",           time:"2:00 PM",ko:"2026-07-03T18:00:00Z",venue:"AT&T Stadium, Arlington"},
-  {id:"m86",t1:"Argentina",    t2:"Cape Verde",      time:"6:00 PM",ko:"2026-07-03T22:00:00Z",venue:"Hard Rock Stadium, Miami"},
-  {id:"m87",t1:"Colombia",     t2:"Ghana",           time:"9:30 PM",ko:"2026-07-04T01:30:00Z",venue:"Arrowhead Stadium, KC"},
+  {id:"m88",t1:"Australia",   t2:"Egypt",        time:"2:00 PM", ko:"2026-07-03T18:00:00Z",venue:"AT&T Stadium, Arlington"},
+  {id:"m86",t1:"Argentina",   t2:"Cape Verde",   time:"6:00 PM", ko:"2026-07-03T22:00:00Z",venue:"Hard Rock Stadium, Miami"},
+  {id:"m87",t1:"Colombia",    t2:"Ghana",        time:"9:30 PM", ko:"2026-07-04T01:30:00Z",venue:"Arrowhead Stadium, KC"},
  ],
 };
 
-const FLAGS={
-  "South Africa":"🇿🇦","Canada":"🇨🇦","Brazil":"🇧🇷","Japan":"🇯🇵","Germany":"🇩🇪","Paraguay":"🇵🇾",
-  "Netherlands":"🇳🇱","Morocco":"🇲🇦","Ivory Coast":"🇨🇮","Norway":"🇳🇴","France":"🇫🇷","Sweden":"🇸🇪",
-  "Mexico":"🇲🇽","Ecuador":"🇪🇨","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","DR Congo":"🇨🇩","Belgium":"🇧🇪","Senegal":"🇸🇳",
-  "USA":"🇺🇸","Bosnia & Herz.":"🇧🇦","Spain":"🇪🇸","Austria":"🇦🇹","Portugal":"🇵🇹","Croatia":"🇭🇷",
-  "Switzerland":"🇨🇭","Algeria":"🇩🇿","Australia":"🇦🇺","Egypt":"🇪🇬","Argentina":"🇦🇷","Cape Verde":"🇨🇻",
-  "Colombia":"🇨🇴","Ghana":"🇬🇭",
-};
+const FLAGS={"South Africa":"🇿🇦","Canada":"🇨🇦","Brazil":"🇧🇷","Japan":"🇯🇵","Germany":"🇩🇪","Paraguay":"🇵🇾","Netherlands":"🇳🇱","Morocco":"🇲🇦","Ivory Coast":"🇨🇮","Norway":"🇳🇴","France":"🇫🇷","Sweden":"🇸🇪","Mexico":"🇲🇽","Ecuador":"🇪🇨","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","DR Congo":"🇨🇩","Belgium":"🇧🇪","Senegal":"🇸🇳","USA":"🇺🇸","Bosnia & Herz.":"🇧🇦","Spain":"🇪🇸","Austria":"🇦🇹","Portugal":"🇵🇹","Croatia":"🇭🇷","Switzerland":"🇨🇭","Algeria":"🇩🇿","Australia":"🇦🇺","Egypt":"🇪🇬","Argentina":"🇦🇷","Cape Verde":"🇨🇻","Colombia":"🇨🇴","Ghana":"🇬🇭"};
 const f=n=>FLAGS[n]||"🏳";
 
-// ═══════════════════════════════════
-// QUESTIONS
-// ═══════════════════════════════════
 const Qs=[
-  {id:"winner",      label:"Match Winner",               pts:3,  opts:(a,b)=>[a,b]},
-  {id:"both_score",  label:"Both Teams Score?",          pts:2,  opts:()=>["Yes","No"]},
-  {id:"total_goals", label:"Total Goals (90 min)",       pts:3,  opts:()=>["0–1","2–3","4–5","6+"]},
-  {id:"first_scorer",label:"First Goal By",              pts:3,  opts:(a,b)=>[a,b,"No goals"]},
-  {id:"exact",       label:"Exact Score (90 min)",       pts:5,  type:"score"},
-  {id:"ht_winner",   label:"Half-Time Leader",           pts:2,  opts:(a,b)=>[a,"Draw",b]},
-  {id:"yellows",     label:"Total Yellow Cards",         pts:2,  type:"number",max:20},
-  {id:"corners",     label:"Total Corners",              pts:2,  type:"number",max:30},
-  {id:"penalty_90",  label:"Penalty Awarded? (90 min)",  pts:3,  opts:()=>["Yes","No"]},
-  {id:"red_cards",   label:"Total Red Cards",            pts:2,  type:"number",max:5},
-  {id:"extra_time",  label:"Will match go to Extra Time?",pts:3, opts:()=>["Yes","No"]},
+  {id:"winner",      label:"Match Winner",               pts:3, opts:(a,b)=>[a,b]},
+  {id:"both_score",  label:"Both Teams Score?",          pts:2, opts:()=>["Yes","No"]},
+  {id:"total_goals", label:"Total Goals (90 min)",       pts:3, opts:()=>["0–1","2–3","4–5","6+"]},
+  {id:"first_scorer",label:"First Goal By",              pts:3, opts:(a,b)=>[a,b,"No goals"]},
+  {id:"exact",       label:"Exact Score (90 min)",       pts:5, type:"score"},
+  {id:"ht_winner",   label:"Half-Time Leader",           pts:2, opts:(a,b)=>[a,"Draw",b]},
+  {id:"yellows",     label:"Total Yellow Cards",         pts:2, type:"number",max:20},
+  {id:"corners",     label:"Total Corners",              pts:2, type:"number",max:30},
+  {id:"penalty_90",  label:"Penalty Awarded? (90 min)",  pts:3, opts:()=>["Yes","No"]},
+  {id:"red_cards",   label:"Total Red Cards",            pts:2, type:"number",max:5},
+  {id:"extra_time",  label:"Will match go to Extra Time?",pts:3,opts:()=>["Yes","No"]},
   {id:"et_score",    label:"Score after Extra Time (120 min)",pts:4,type:"et_score",show:a=>a.extra_time==="Yes"},
-  {id:"penalties_q", label:"Will it go to Penalties?",  pts:3,  opts:()=>["Yes","No"],show:a=>a.extra_time==="Yes"},
-  {id:"pen_score",   label:"Penalty Shootout Score",     pts:4,  type:"pen_score",show:a=>a.extra_time==="Yes"&&a.penalties_q==="Yes"},
+  {id:"penalties_q", label:"Will it go to Penalties?",  pts:3, opts:()=>["Yes","No"],show:a=>a.extra_time==="Yes"},
+  {id:"pen_score",   label:"Penalty Shootout Score",     pts:4, type:"pen_score",show:a=>a.extra_time==="Yes"&&a.penalties_q==="Yes"},
 ];
 
-// ═══════════════════════════════════
-// STATE
-// ═══════════════════════════════════
+// ── STATE ──────────────────────────────────────────────────────────────────
 let CUR={name:"",isAdmin:false};
 let pDate=nextOpen(),rDate=nextOpen(),aDate=nextOpen(),adminPredsDate=nextOpen();
 let curMatch=null,curAns={},curSA="",curSB="",curETA="",curETB="",curPenA="",curPenB="";
-let _pName="",_pPw="",_pData=null;
-// In-memory database (synced from Google Sheets)
-let DB={};
+let _pName="",_pPw="";
+let sheetConnected=false;
 
-function nextOpen(){
-  const now=new Date();
-  for(const d of Object.keys(S).sort())
-    if((S[d]||[]).some(m=>now<new Date(m.ko))) return d;
-  return Object.keys(S).sort().pop();
-}
+function nextOpen(){const now=new Date();for(const d of Object.keys(S).sort())if((S[d]||[]).some(m=>now<new Date(m.ko)))return d;return Object.keys(S).sort().pop();}
 function kicked(m){return new Date()>=new Date(m.ko);}
 function over(m){return new Date()>=new Date(new Date(m.ko).getTime()+115*60000);}
 function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
 function allMatches(){return Object.values(S).flat();}
 
-// ═══════════════════════════════════
-// GOOGLE SHEETS API HELPER
-// ═══════════════════════════════════
-async function api(action, payload={}){
-  try{
-    const resp=await fetch(SCRIPT_URL,{
+// ── SHEET API (with localStorage fallback) ─────────────────────────────────
+const sheetReady = SCRIPT_URL && SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbztO3sEGuM4zMdRpIGMGL3UXMhI2_wVI4gHkijtdXwVM34QPs5z4uNmCI5yqEhK6M-XCw/exec";
+
+async function sheetCall(action, payload={}) {
+  if (!sheetReady) return null;
+  try {
+    const r = await fetch(SCRIPT_URL, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({action,...payload})
+      body: JSON.stringify({action, ...payload})
     });
-    return await resp.json();
-  }catch(e){
-    console.warn("Sheet API error:",e.message);
-    return null;
-  }
+    return await r.json();
+  } catch(e) { return null; }
 }
 
-// Sync everything from Sheets into DB
-async function syncFromSheet(){
-  showFetching(true);
-  const data=await api("loadAll");
-  if(data && !data.error) DB={...DB,...data};
-  showFetching(false);
+// Pull everything from Sheet into localStorage
+async function syncDown() {
+  if (!sheetReady) { setSyncUI(false); return; }
+  setSyncUI(null); // busy
+  const data = await sheetCall("loadAll");
+  if (!data || data.error) { setSyncUI(false); return; }
+  // Merge into localStorage  (sheet wins for other-device keys)
+  Object.entries(data).forEach(([k,v]) => {
+    const local = localStorage.getItem(k);
+    const existing = local ? JSON.parse(local) : null;
+    // For predictions: keep whichever is newer
+    const incomingSaved = v && v.savedAt ? v.savedAt : 0;
+    const localSaved = existing && existing.savedAt ? existing.savedAt : 0;
+    if (!existing || incomingSaved >= localSaved) {
+      localStorage.setItem(k, JSON.stringify(v));
+    }
+  });
+  setSyncUI(true);
 }
 
-// ═══════════════════════════════════
-// STORAGE — reads from DB, writes to DB + Sheet
-// ═══════════════════════════════════
-function savePred(matchId,name,ans,sa,sb,etA,etB,penA,penB){
+// Push one prediction to Sheet (fire-and-forget)
+function pushPred(matchId, name, ans, sa, sb, etA, etB, penA, penB) {
+  if (!sheetReady) return;
+  const m = allMatches().find(x=>x.id===matchId)||{t1:"",t2:""};
+  sheetCall("savePred",{name,matchId,t1:m.t1,t2:m.t2,ans,sa,sb,etA,etB,penA,penB})
+    .then(r=>{ if(r&&!r.error) setSyncUI(true); });
+}
+
+function setSyncUI(ok) {
+  const dot  = document.getElementById("syncDot");
+  const txt  = document.getElementById("syncText");
+  if (!dot) return;
+  if (ok===null) { dot.className="sync-dot busy"; txt.textContent="Syncing…"; }
+  else if (ok)   { dot.className="sync-dot ok";   txt.textContent="Synced ✓"; }
+  else           { dot.className="sync-dot";       txt.textContent=sheetReady?"Offline":"Local only"; }
+}
+
+// ── STORAGE (localStorage as primary, sheet as cloud backup) ───────────────
+function lsSavePred(matchId,name,ans,sa,sb,etA,etB,penA,penB){
   const key="pred:"+matchId+":"+name.toLowerCase();
   const pred={name,matchId,ans,sa,sb,etA,etB,penA,penB,savedAt:Date.now()};
-  DB[key]=pred; // instant local write
-  // async write to Sheet (fire and forget)
-  const m=allMatches().find(x=>x.id===matchId)||{t1:"",t2:""};
-  api("savePred",{name,matchId,t1:m.t1,t2:m.t2,ans,sa,sb,etA,etB,penA,penB}).then(r=>{
-    if(r&&r.error) console.warn("Save error:",r.error);
-  });
+  localStorage.setItem(key, JSON.stringify(pred));
 }
-
-function loadMyPreds(name){
-  return Object.values(DB).filter(v=>v&&v.name&&v.name.toLowerCase()===name.toLowerCase()&&v.matchId);
-}
-function loadMatchPreds(matchId){
-  return Object.values(DB).filter(v=>v&&v.matchId===matchId&&v.name);
-}
-function loadAllPreds(){
-  return Object.values(DB).filter(v=>v&&v.matchId&&v.name);
-}
-function saveResult(matchId,res){
-  DB["res:"+matchId]=res;
-}
-function loadResult(matchId){
-  return DB["res:"+matchId]||null;
-}
-function loadAllResults(){
-  const out={};
-  Object.keys(DB).filter(k=>k.startsWith("res:")).forEach(k=>out[k.slice(4)]=DB[k]);
+function lsLoadMyPreds(name){
+  const out=[];
+  for(const k in localStorage) if(k.startsWith("pred:")&&k.endsWith(":"+name.toLowerCase())) out.push(JSON.parse(localStorage[k]));
   return out;
 }
+function lsLoadMatchPreds(matchId){
+  const out=[];
+  for(const k in localStorage) if(k.startsWith("pred:"+matchId+":")) out.push(JSON.parse(localStorage[k]));
+  return out;
+}
+function lsLoadAllPreds(){
+  const out=[];
+  for(const k in localStorage) if(k.startsWith("pred:")) out.push(JSON.parse(localStorage[k]));
+  return out;
+}
+function lsSaveResult(matchId,res){localStorage.setItem("res:"+matchId,JSON.stringify(res));}
+function lsLoadResult(matchId){const v=localStorage.getItem("res:"+matchId);return v?JSON.parse(v):null;}
+function lsLoadAllResults(){const out={};for(const k in localStorage) if(k.startsWith("res:")) out[k.slice(4)]=JSON.parse(localStorage[k]);return out;}
 
-// ═══════════════════════════════════
-// AUTH
-// ═══════════════════════════════════
+// ── SCORING ────────────────────────────────────────────────────────────────
+function calcScore(pred,res){
+  if(!res) return null;
+  let pts=0;const a=pred.ans,r=res;
+  if(a.winner===r.winner)pts+=3;
+  if(a.both_score===r.both_score)pts+=2;
+  if(a.total_goals===r.total_goals)pts+=3;
+  if(a.first_scorer===r.first_scorer)pts+=3;
+  if(String(pred.sa)===String(r.sa)&&String(pred.sb)===String(r.sb))pts+=5;
+  if(a.ht_winner===r.ht_winner)pts+=2;
+  if(String(a.yellows)===String(r.yellows))pts+=2;
+  if(String(a.corners)===String(r.corners))pts+=2;
+  if(a.penalty_90===r.penalty_90)pts+=3;
+  if(String(a.red_cards)===String(r.red_cards))pts+=2;
+  if(a.extra_time===r.extra_time)pts+=3;
+  if(r.extra_time==="Yes"){
+    if(String(pred.etA)===String(r.etA)&&String(pred.etB)===String(r.etB))pts+=4;
+    if(a.penalties_q===r.penalties_q)pts+=3;
+    if(r.penalties_q==="Yes"&&String(pred.penA)===String(r.penA)&&String(pred.penB)===String(r.penB))pts+=4;
+  }
+  return pts;
+}
+function maxPts(res){let m=30;if(res&&res.extra_time==="Yes"){m+=7;if(res.penalties_q==="Yes")m+=4;}return m;}
+
+// ── AUTO-FETCH results via Apps Script (Sofascore, no key) ─────────────────
+async function autoFetchPending(){
+  const allRes=lsLoadAllResults();
+  const pending=allMatches().filter(m=>over(m)&&!allRes[m.id]);
+  if(!pending.length) return;
+  if(!sheetReady){
+    document.getElementById("fetchingIndicator") && (document.getElementById("fetchingIndicator").style.display="inline");
+    return;
+  }
+  document.getElementById("fetchingIndicator") && (document.getElementById("fetchingIndicator").style.display="inline");
+  const r = await sheetCall("fetchResults");
+  if(r && r.fetched>0){
+    await syncDown();
+    showBanner(`✅ ${r.fetched} result${r.fetched>1?"s":""} fetched & scores updated!`,"#00D563");
+    renderPredict();
+    if(document.getElementById("t-leaderboard").style.display!=="none") renderLeaderboard();
+    if(document.getElementById("t-results").style.display!=="none")     renderResults();
+  }
+  document.getElementById("fetchingIndicator") && (document.getElementById("fetchingIndicator").style.display="none");
+}
+
+async function manualFetchResult(matchId){
+  const m=allMatches().find(x=>x.id===matchId);if(!m)return;
+  const btn=event.target;btn.disabled=true;btn.textContent="🔄 Fetching…";
+  if(sheetReady){
+    await sheetCall("fetchResults");
+    await syncDown();
+  }
+  btn.disabled=false;btn.textContent="🔄 Fetch Result Now";
+  const res=lsLoadResult(matchId);
+  if(res){
+    let msg=`${m.t1} ${res.sa}–${res.sb} ${m.t2}`;
+    if(res.extra_time==="Yes")msg+=` (AET${res.penalties_q==="Yes"?` Pen ${res.penA}–${res.penB}`:""})`;
+    alert("✅ Result saved!\n"+msg);
+  } else {
+    alert("Match not finished yet or result unavailable.");
+  }
+  renderAdminResults();renderLeaderboard();renderResults();renderPredict();
+}
+
+// Admin refresh button
+async function adminRefresh(){
+  const btn=event.target;btn.disabled=true;btn.textContent="⏳ Refreshing…";
+  await syncDown();
+  renderAdmin();
+  btn.disabled=false;btn.textContent="🔄 Refresh All";
+  showBanner("✅ Admin panel refreshed — all player data loaded!","#00D563");
+}
+
+function showBanner(msg,color){
+  const b=document.createElement("div");
+  b.style.cssText=`position:fixed;top:50px;left:0;right:0;z-index:300;text-align:center;padding:11px;background:#0D2E1E;border-bottom:2px solid ${color};color:${color};font-weight:700;font-size:13px`;
+  b.textContent=msg;document.body.appendChild(b);setTimeout(()=>b.remove(),4000);
+}
+
+// ── AUTH ───────────────────────────────────────────────────────────────────
 function genPw(){const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join("");}
 function showMsg(msg,ok){const el=document.getElementById("loginMsg");el.style.display="block";el.style.background=ok?"#0D2E1E":"#1A0808";el.style.color=ok?"#00D563":"#F87171";el.textContent=msg;}
 function hideMsg(){document.getElementById("loginMsg").style.display="none";}
 function setStep(s){["stepName","stepNew","stepReturn","stepAdmin"].forEach(x=>document.getElementById(x).style.display="none");document.getElementById(s).style.display="block";}
 
-async function checkName(){
+function checkName(){
   const nm=document.getElementById("loginName").value.trim();
   if(!nm){showMsg("Please enter your name");return;}
   hideMsg();_pName=nm;
-  showMsg("Checking…",true);
-  const result=await api("checkUser",{name:nm});
-  hideMsg();
-  if(result&&result.found){
-    _pData=result;
-    document.getElementById("retName").textContent=result.displayName||nm;
-    document.getElementById("loginPw").value="";
-    setStep("stepReturn");
-  } else {
-    _pPw=genPw();
-    document.getElementById("newName").textContent=nm;
-    document.getElementById("genPw").textContent=_pPw;
-    setStep("stepNew");
-  }
+  const stored=localStorage.getItem("user:"+nm.toLowerCase());
+  if(stored){document.getElementById("retName").textContent=nm;document.getElementById("loginPw").value="";setStep("stepReturn");}
+  else{_pPw=genPw();document.getElementById("newName").textContent=nm;document.getElementById("genPw").textContent=_pPw;setStep("stepNew");}
 }
-
 function copyPw(){navigator.clipboard.writeText(_pPw).catch(()=>{});const btn=event.target;btn.textContent="✅ Copied!";setTimeout(()=>btn.textContent="📋 Copy",2000);}
-
-async function registerUser(){
-  showMsg("Registering…",true);
-  const r=await api("registerUser",{name:_pName,pw:_pPw});
-  hideMsg();
-  if(r&&r.exists){
-    // account already exists (race condition), just use existing pw
-    showMsg("That name is taken! Try a different name.",false);
-    return;
-  }
-  DB["user:"+_pName.toLowerCase()]={displayName:_pName,pw:_pPw};
+function registerUser(){
+  localStorage.setItem("user:"+_pName.toLowerCase(),JSON.stringify({displayName:_pName,pw:_pPw,createdAt:Date.now()}));
+  // Also push to sheet
+  sheetCall("registerUser",{name:_pName,pw:_pPw});
   enterApp(_pName,false);
 }
-
 function loginUser(){
   const pw=document.getElementById("loginPw").value.trim().toUpperCase();
-  if(!_pData){showMsg("User not found");return;}
-  if(pw!==_pData.pw){showMsg("Wrong password — check your saved code");return;}
-  enterApp(_pData.displayName||_pName,false);
+  const stored=localStorage.getItem("user:"+_pName.toLowerCase());
+  if(!stored){showMsg("User not found");return;}
+  const data=JSON.parse(stored);
+  if(pw!==data.pw){showMsg("Wrong password — check your saved code");return;}
+  enterApp(data.displayName,false);
 }
-
 function forgotPw(){showMsg("Ask admin to look up your password in the Admin panel");}
 function showAdminLogin(){setStep("stepAdmin");hideMsg();}
 function loginAdmin(){if(document.getElementById("adminPwInput").value!==ADMIN_PW){showMsg("Wrong admin password");return;}enterApp(ADMIN_NAME,true);}
@@ -478,24 +536,22 @@ async function enterApp(name,isAdmin){
   document.getElementById("mainApp").style.display="block";
   document.getElementById("curName").textContent=name;
   if(isAdmin){document.getElementById("adminBadge").style.display="inline";document.getElementById("adminTabBtn").style.display="block";}
-  // Sync all data from Sheet on login
-  await syncFromSheet();
+  setSyncUI(null);
+  await syncDown();  // pull everyone's data from sheet into localStorage
   renderPredict();
-  // Auto-sync every 30 seconds (picks up other players' predictions)
+  setTimeout(autoFetchPending,1500);
+  // Auto-refresh every 30s so admin always sees latest
   setInterval(async()=>{
-    await syncFromSheet();
-    renderPredict();
+    await syncDown();
     if(document.getElementById("t-leaderboard").style.display!=="none") renderLeaderboard();
     if(document.getElementById("t-results").style.display!=="none")     renderResults();
     if(document.getElementById("t-admin").style.display!=="none")       renderAdmin();
+    renderPredict();
   },30000);
-  // Auto-fetch pending results in background
-  setTimeout(autoFetchPending,1500);
 }
 
 function logout(){
   CUR={name:"",isAdmin:false};
-  DB={};
   document.getElementById("mainApp").style.display="none";
   document.getElementById("loginScreen").style.display="flex";
   document.getElementById("loginName").value="";
@@ -508,121 +564,43 @@ function logout(){
   document.getElementById("t-predict").style.display="block";
 }
 
-// ═══════════════════════════════════
-// SCORING
-// ═══════════════════════════════════
-function calcScore(pred,res){
-  if(!res) return null;
-  let pts=0;const a=pred.ans,r=res;
-  if(a.winner===r.winner) pts+=3;
-  if(a.both_score===r.both_score) pts+=2;
-  if(a.total_goals===r.total_goals) pts+=3;
-  if(a.first_scorer===r.first_scorer) pts+=3;
-  if(String(pred.sa)===String(r.sa)&&String(pred.sb)===String(r.sb)) pts+=5;
-  if(a.ht_winner===r.ht_winner) pts+=2;
-  if(String(a.yellows)===String(r.yellows)) pts+=2;
-  if(String(a.corners)===String(r.corners)) pts+=2;
-  if(a.penalty_90===r.penalty_90) pts+=3;
-  if(String(a.red_cards)===String(r.red_cards)) pts+=2;
-  if(a.extra_time===r.extra_time) pts+=3;
-  if(r.extra_time==="Yes"){
-    if(String(pred.etA)===String(r.etA)&&String(pred.etB)===String(r.etB)) pts+=4;
-    if(a.penalties_q===r.penalties_q) pts+=3;
-    if(r.penalties_q==="Yes"&&String(pred.penA)===String(r.penA)&&String(pred.penB)===String(r.penB)) pts+=4;
-  }
-  return pts;
-}
-function maxPts(res){
-  let m=30;
-  if(res&&res.extra_time==="Yes"){m+=7;if(res.penalties_q==="Yes")m+=4;}
-  return m;
-}
-
-// ═══════════════════════════════════
-// AUTO-FETCH RESULTS via Apps Script (no Claude API)
-// ═══════════════════════════════════
-async function autoFetchPending(){
-  const allRes=loadAllResults();
-  const pending=allMatches().filter(m=>over(m)&&!allRes[m.id]);
-  if(!pending.length) return;
-  showFetching(true);
-  // Tell Apps Script to fetch & store results; re-sync DB afterwards
-  const r=await api("fetchResults");
-  if(r&&r.fetched>0){
-    await syncFromSheet();
-    showBanner(`✅ ${r.fetched} result${r.fetched>1?"s":""} auto-fetched! Scores updated.`,"#00D563");
-    renderPredict();
-    if(document.getElementById("t-leaderboard").style.display!=="none") renderLeaderboard();
-    if(document.getElementById("t-results").style.display!=="none")     renderResults();
-  }
-  showFetching(false);
-}
-
-async function manualFetchResult(matchId){
-  const m=allMatches().find(x=>x.id===matchId);if(!m)return;
-  const btn=event.target;btn.disabled=true;btn.textContent="🔄 Fetching…";
-  const r=await api("fetchResults");
-  await syncFromSheet();
-  btn.disabled=false;btn.textContent="🔄 Fetch Result Now";
-  const res=loadResult(matchId);
-  if(!res){alert("Match not finished yet or couldn't get result.");return;}
-  let msg=`${m.t1} ${res.sa}–${res.sb} ${m.t2}`;
-  if(res.extra_time==="Yes")msg+=` (AET${res.penalties_q==="Yes"?` Pen ${res.penA}–${res.penB}`:""})`;
-  alert("✅ Result saved!\n"+msg);
-  renderAdminResults();renderLeaderboard();renderResults();renderPredict();
-}
-
-function showFetching(on){document.getElementById("fetchingIndicator").style.display=on?"inline":"none";}
-
-function showBanner(msg,color){
-  const b=document.createElement("div");
-  b.style.cssText=`position:fixed;top:50px;left:0;right:0;z-index:300;text-align:center;padding:11px;background:#0D2E1E;border-bottom:2px solid ${color};color:${color};font-weight:700;font-size:13px`;
-  b.textContent=msg;document.body.appendChild(b);setTimeout(()=>b.remove(),4000);
-}
-
-// ═══════════════════════════════════
-// TABS
-// ═══════════════════════════════════
+// ── TABS ───────────────────────────────────────────────────────────────────
 function showTab(t,btn){
   ["predict","myBets","results","leaderboard","admin"].forEach(x=>document.getElementById("t-"+x).style.display="none");
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
   document.getElementById("t-"+t).style.display="block";btn.classList.add("on");
-  if(t==="myBets")renderMyBets();
-  if(t==="results")renderResults();
+  if(t==="myBets")    renderMyBets();
+  if(t==="results")   renderResults();
   if(t==="leaderboard")renderLeaderboard();
-  if(t==="admin")renderAdmin();
+  if(t==="admin"){syncDown().then(()=>renderAdmin());}
 }
 
-// ═══════════════════════════════════
-// DATE STRIP
-// ═══════════════════════════════════
+// ── DATE STRIP ─────────────────────────────────────────────────────────────
 function stripHTML(active,onClick){
   const today=new Date().toISOString().slice(0,10);
   return Object.keys(S).sort().map(d=>{
     const[y,mo,dy]=d.split("-");
     const dow=new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short"});
     const isOn=d===active,open=(S[d]||[]).some(m=>!kicked(m));
-    const hasResults=(S[d]||[]).some(m=>loadResult(m.id)!==null);
+    const hasRes=(S[d]||[]).some(m=>lsLoadResult(m.id)!==null);
     let tag=open?'<div class="dtag" style="color:#60A5FA">OPEN</div>':'<div class="dtag" style="color:#2D3A52">DONE</div>';
-    if(hasResults)tag='<div class="dtag" style="color:#00D563">✓</div>';
-    if(d===today&&open)tag='<div class="dtag" style="color:#00D563">TODAY</div>';
+    if(hasRes) tag='<div class="dtag" style="color:#00D563">✓</div>';
+    if(d===today&&open) tag='<div class="dtag" style="color:#00D563">TODAY</div>';
     return`<button class="dbtn ${isOn?"on":""}" onclick="${onClick}('${d}')"><div class="dw">${dow.toUpperCase()}</div><div class="dd">${dy}</div>${tag}</button>`;
   }).join("");
 }
 
-// ═══════════════════════════════════
-// PREDICT TAB
-// ═══════════════════════════════════
+// ── PREDICT TAB ────────────────────────────────────────────────────────────
 function renderPredict(){
   document.getElementById("pStrip").innerHTML=stripHTML(pDate,"setPDate");
-  const matches=S[pDate]||[];const allRes=loadAllResults();let html="";
+  const matches=S[pDate]||[];const allRes=lsLoadAllResults();let html="";
   if(matches.length&&matches.every(m=>kicked(m))){
     const nxt=nextOpen();
     if(nxt!==pDate)html+=`<div style="background:#0D1A2A;border:1px solid #1F3A52;border-radius:12px;padding:12px;margin-bottom:12px;text-align:center"><div style="color:#60A5FA;font-weight:700;margin-bottom:7px;font-size:12px">⏰ All matches today started</div><button onclick="setPDate('${nxt}')" style="background:#00D563;color:#0A0E1A;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer">👉 Next open matches →</button></div>`;
   }
   matches.forEach((m,i)=>{
     const k=kicked(m),res=allRes[m.id];
-    const hasPred=!!DB["pred:"+m.id+":"+CUR.name.toLowerCase()];
+    const hasPred=!!localStorage.getItem("pred:"+m.id+":"+CUR.name.toLowerCase());
     const badge=res?`<span class="badge-ft">✓ ${res.sa}–${res.sb}${res.extra_time==="Yes"?(res.penalties_q==="Yes"?" Pen":" AET"):""}</span>`
       :k?`<span class="badge-live">🔴 LIVE</span>`
       :`<span style="color:#00D563;font-size:10px;font-weight:700">🟢 ${m.time} ET</span>`;
@@ -643,9 +621,7 @@ function renderPredict(){
 }
 function setPDate(d){pDate=d;renderPredict();}
 
-// ═══════════════════════════════════
-// PREDICTION FORM
-// ═══════════════════════════════════
+// ── PREDICTION FORM ────────────────────────────────────────────────────────
 function openForm(idx){
   curMatch={...S[pDate][idx],date:pDate};curAns={};curSA="";curSB="";curETA="";curETB="";curPenA="";curPenB="";
   document.getElementById("nMatchInfo").innerHTML=`R32 · ${fmtDate(pDate)} · ${curMatch.time} ET`;
@@ -667,11 +643,11 @@ function closeForm(){document.getElementById("nameView").classList.remove("on");
 function getVisibleQs(){return Qs.filter(q=>!q.show||q.show(curAns));}
 function isQAns(q){
   switch(q.type){
-    case"score":return curSA!==""&&curSB!=="";
-    case"et_score":return curETA!==""&&curETB!=="";
+    case"score":    return curSA!==""&&curSB!=="";
+    case"et_score": return curETA!==""&&curETB!=="";
     case"pen_score":return curPenA!==""&&curPenB!=="";
-    case"number":return curAns[q.id]!==undefined&&String(curAns[q.id]).trim()!=="";
-    default:return!!curAns[q.id];
+    case"number":   return curAns[q.id]!==undefined&&String(curAns[q.id]).trim()!=="";
+    default:        return!!curAns[q.id];
   }
 }
 
@@ -687,13 +663,9 @@ function renderQs(){
         <span class="pts-b ${ans?"on":""}">${ans?"✓ ":""}${q.pts}pts</span>
       </div>`;
     switch(q.type){
-      case"score":html+=scoreRow(m.t1,m.t2,curSA,curSB,"curSA","curSB");break;
-      case"et_score":
-        html+=`<div style="color:#60A5FA;font-size:10px;margin-bottom:6px">Score after 120 min (includes all goals inc. ET)</div>`;
-        html+=scoreRow(m.t1,m.t2,curETA,curETB,"curETA","curETB");break;
-      case"pen_score":
-        html+=`<div style="color:#A78BFA;font-size:10px;margin-bottom:6px">Penalty goals scored (e.g. 5–4)</div>`;
-        html+=scoreRow(m.t1,m.t2,curPenA,curPenB,"curPenA","curPenB","5","5");break;
+      case"score":    html+=scoreRow(m.t1,m.t2,curSA,curSB,"curSA","curSB");break;
+      case"et_score": html+=`<div style="color:#60A5FA;font-size:10px;margin-bottom:6px">Score after 120 min</div>`+scoreRow(m.t1,m.t2,curETA,curETB,"curETA","curETB");break;
+      case"pen_score":html+=`<div style="color:#A78BFA;font-size:10px;margin-bottom:6px">Penalty goals scored</div>`+scoreRow(m.t1,m.t2,curPenA,curPenB,"curPenA","curPenB","5","5");break;
       case"number":
         html+=`<div style="display:flex;align-items:center;gap:12px">
           <input type="number" min="0" max="${q.max||20}" value="${curAns[q.id]||""}" placeholder="0"
@@ -721,7 +693,6 @@ function scoreRow(t1,t2,vA,vB,varA,varB,ph="0",ph2="0"){
     </div>
   </div>`;
 }
-
 function pickAns(id,val){
   curAns[id]=val;
   if(id==="extra_time"&&val==="No"){delete curAns.penalties_q;curETA="";curETB="";curPenA="";curPenB="";}
@@ -740,116 +711,96 @@ function updateProg(){
 }
 function submitPred(){
   if(!CUR.name||!getVisibleQs().every(isQAns))return;
-  savePred(curMatch.id,CUR.name,curAns,curSA,curSB,curETA,curETB,curPenA,curPenB);
+  lsSavePred(curMatch.id,CUR.name,curAns,curSA,curSB,curETA,curETB,curPenA,curPenB);
+  pushPred(curMatch.id,CUR.name,curAns,curSA,curSB,curETA,curETB,curPenA,curPenB);
   closeForm();
   showBanner("✅ "+CUR.name+"'s prediction locked for "+curMatch.t1+" vs "+curMatch.t2+"!","#00D563");
   renderPredict();
 }
 
-// ═══════════════════════════════════
-// MY BETS TAB
-// ═══════════════════════════════════
+// ── MY BETS ────────────────────────────────────────────────────────────────
 function renderMyBets(){
-  const allRes=loadAllResults(),myPreds=loadMyPreds(CUR.name);
+  const allRes=lsLoadAllResults(),myPreds=lsLoadMyPreds(CUR.name);
   if(!myPreds.length){document.getElementById("myBetsContent").innerHTML=`<div class="empty">📭 No predictions yet.<br><br>Go to ⚽ Predict!</div>`;return;}
   let html="";
   myPreds.sort((a,b)=>a.matchId.localeCompare(b.matchId)).forEach(pred=>{
     const m=allMatches().find(x=>x.id===pred.matchId)||{t1:"?",t2:"?",time:"?",venue:"?"};
-    const res=loadResult(pred.matchId);
+    const res=lsLoadResult(pred.matchId);
     const pts=calcScore(pred,res);const maxP=maxPts(res);
     html+=`<div class="fcard" style="${res?"border-color:#1A3A2A":""}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div><div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div>
           <div style="color:#4A5568;font-size:10px;margin-top:2px">${m.venue} · ${m.time} ET</div></div>
-        ${pts!==null?`<div style="text-align:right"><div style="color:${pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171"};font-weight:900;font-size:20px">${pts}</div><div style="color:#4A5568;font-size:9px">/${maxP} pts</div></div>`
-        :`<div style="color:#4A5568;font-size:10px">Pending</div>`}
+        ${pts!==null?`<div style="text-align:right"><div style="color:${pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171"};font-weight:900;font-size:20px">${pts}</div><div style="color:#4A5568;font-size:9px">/${maxP} pts</div></div>`:`<div style="color:#4A5568;font-size:10px">Pending</div>`}
       </div>
       <div style="display:flex;align-items:center;gap:10px;background:#0A0E1A;border-radius:8px;padding:8px;margin-bottom:8px">
         <div style="flex:1;text-align:center"><div style="color:#60A5FA;font-size:10px;font-weight:600">${f(m.t1)} ${m.t1}</div><div style="font-size:22px;font-weight:900">${pred.sa}</div></div>
         <div style="color:#4A5568;font-size:16px">–</div>
         <div style="flex:1;text-align:center"><div style="color:#F87171;font-size:10px;font-weight:600">${f(m.t2)} ${m.t2}</div><div style="font-size:22px;font-weight:900">${pred.sb}</div></div>
       </div>
-      ${pred.etA!==undefined&&pred.etA!==""?`<div style="background:#1A1A2A;border-radius:6px;padding:4px 8px;margin-bottom:6px;font-size:10px"><span style="color:#A78BFA;font-weight:600">ET: </span>${pred.etA}–${pred.etB}${pred.penA&&pred.penA!==""?` · <span style="color:#A78BFA;font-weight:600">Pen: </span>${pred.penA}–${pred.penB}`:""}</div>`:""}
+      ${pred.etA&&pred.etA!==""?`<div style="background:#1A1A2A;border-radius:6px;padding:4px 8px;margin-bottom:6px;font-size:10px"><span style="color:#A78BFA;font-weight:600">ET: </span>${pred.etA}–${pred.etB}${pred.penA&&pred.penA!==""?` · <span style="color:#A78BFA;font-weight:600">Pen: </span>${pred.penA}–${pred.penB}`:""}</div>`:""}
       <div style="display:flex;flex-wrap:wrap">${renderPills(pred,res)}</div>
       ${res?`<div style="margin-top:7px;padding:5px 9px;background:#0D2E1E;border-radius:7px;font-size:10px;color:#00D563;font-weight:600">✅ ${m.t1} ${res.sa}–${res.sb} ${m.t2}${res.extra_time==="Yes"?` (AET${res.penalties_q==="Yes"?` Pen ${res.penA}–${res.penB}`:""})`:""}</div>`:""}
     </div>`;
   });
   document.getElementById("myBetsContent").innerHTML=html;
 }
-
 function renderPills(pred,res){
   return Qs.map(q=>{
-    if(q.type==="score"||q.type==="et_score"||q.type==="pen_score") return "";
-    if(q.show&&!q.show(pred.ans)) return "";
-    const val=pred.ans[q.id];
-    if(val===undefined||val==="") return "";
+    if(q.type==="score"||q.type==="et_score"||q.type==="pen_score")return"";
+    if(q.show&&!q.show(pred.ans))return"";
+    const val=pred.ans[q.id];if(val===undefined||val==="")return"";
     const resVal=res?String(res[q.id]):null;
-    const ok=resVal&&String(val)===resVal;
-    const bad=resVal&&!ok;
+    const ok=resVal&&String(val)===resVal,bad=resVal&&!ok;
     return`<span class="pill ${ok?"ok":bad?"bad":""}"><span class="pill-k">${q.label.split(" ").slice(-1)[0]}: </span><span style="font-weight:600">${val}</span>${ok?" ✓":bad?" ✗":""}</span>`;
   }).join("");
 }
 
-// ═══════════════════════════════════
-// RESULTS TAB
-// ═══════════════════════════════════
+// ── RESULTS TAB ────────────────────────────────────────────────────────────
 function renderResults(){
   document.getElementById("rStrip").innerHTML=stripHTML(rDate,"setRDate");
   const matches=S[rDate]||[];let html="";
   matches.forEach(m=>{
-    const res=loadResult(m.id);const isOver=over(m);
-    if(!isOver){
-      html+=`<div class="fcard"><div class="mhdr"><span class="gbadge">R32</span><span class="badge-ns">${m.time} ET</span></div><div style="font-weight:700;font-size:13px;margin-bottom:4px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#4A5568;font-size:11px">Results visible after match ends</div></div>`;
-      return;
-    }
-    if(!res){
-      html+=`<div class="fcard" style="border-color:#2A1A0A"><div class="mhdr"><span class="gbadge">R32</span><span class="badge-live">OVER · Fetching…</span></div><div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#F59E0B;font-size:11px;margin-top:6px">⏳ Result being fetched automatically…</div></div>`;
-      return;
-    }
-    const preds=loadMatchPreds(m.id).sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
+    const res=lsLoadResult(m.id);const isOver=over(m);
+    if(!isOver){html+=`<div class="fcard"><div class="mhdr"><span class="gbadge">R32</span><span class="badge-ns">${m.time} ET</span></div><div style="font-weight:700;font-size:13px;margin-bottom:4px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#4A5568;font-size:11px">Results visible after match ends</div></div>`;return;}
+    if(!res){html+=`<div class="fcard" style="border-color:#2A1A0A"><div class="mhdr"><span class="gbadge">R32</span><span class="badge-live">OVER · Fetching…</span></div><div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#F59E0B;font-size:11px;margin-top:6px">⏳ Result being fetched automatically…</div></div>`;return;}
+    const preds=lsLoadMatchPreds(m.id).sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
     const MEDALS=["🥇","🥈","🥉"];
     html+=`<div class="res-match">
       <div class="res-head">
         <div class="mhdr"><span class="gbadge">R32 · ${m.venue}</span><span class="badge-ft">FULL TIME</span></div>
         <div class="mteams" style="margin-bottom:8px">
           <div class="tside"><span class="tflag">${f(m.t1)}</span><span class="tname">${m.t1}</span></div>
-          <div class="res-score"><div class="res-num">${res.sa}–${res.sb}</div>${res.extra_time==="Yes"?`<div style="color:#A78BFA;font-size:9px;font-weight:700">${res.penalties_q==="Yes"?`AET · Pen: ${res.penA}–${res.penB}`:"AET"}</div>`:""}</div>
+          <div style="text-align:center;padding:0 10px"><div class="res-num">${res.sa}–${res.sb}</div>${res.extra_time==="Yes"?`<div style="color:#A78BFA;font-size:9px;font-weight:700">${res.penalties_q==="Yes"?`AET · Pen: ${res.penA}–${res.penB}`:"AET"}</div>`:""}</div>
           <div class="tside right"><span class="tname">${m.t2}</span><span class="tflag">${f(m.t2)}</span></div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:4px">
-          ${[["Winner",res.winner],["HT",res.ht_winner],["Goals",res.total_goals],
-             ["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],
-             ["Pen (90)",res.penalty_90],["ET",res.extra_time]
-          ].map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563;font-weight:600">${v}</span></span>`).join("")}
+          ${[["Winner",res.winner],["HT",res.ht_winner],["Goals",res.total_goals],["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],["Pen",res.penalty_90],["ET",res.extra_time]].map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563;font-weight:600">${v}</span></span>`).join("")}
         </div>
       </div>
-      ${preds.length===0?`<div style="padding:14px;color:#4A5568;font-size:12px;text-align:center">No predictions for this match</div>`:
-        preds.map((p,i)=>{
-          const pts=calcScore(p,res);const maxP=maxPts(res);
-          const ptsColor=pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171";
-          return`<div class="player-row">
-            <div class="player-top">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:${i<3?16:13}px">${i<3?MEDALS[i]:`#${i+1}`}</span>
-                <span class="player-name">${p.name}</span>
-                <span style="background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:1px 8px;border-radius:12px">${p.sa}–${p.sb}${p.etA&&p.etA!==""?` (ET:${p.etA}–${p.etB})`:""}${p.penA&&p.penA!==""?` Pen:${p.penA}–${p.penB}`:""}</span>
-              </div>
-              <div style="text-align:right"><span style="color:${ptsColor};font-weight:900;font-size:18px">${pts}</span><span style="color:#4A5568;font-size:10px">/${maxP}</span></div>
+      ${preds.length===0?`<div style="padding:14px;color:#4A5568;font-size:12px;text-align:center">No predictions for this match</div>`:preds.map((p,i)=>{
+        const pts=calcScore(p,res);const maxP=maxPts(res);
+        const pc=pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171";
+        return`<div class="player-row">
+          <div class="player-top">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:${i<3?16:13}px">${i<3?MEDALS[i]:`#${i+1}`}</span>
+              <span class="player-name">${p.name}</span>
+              <span style="background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:1px 8px;border-radius:12px">${p.sa}–${p.sb}</span>
             </div>
-            <div class="ans-grid">
-              ${Qs.map(q=>{
-                if(q.type==="score"||q.type==="et_score"||q.type==="pen_score") return "";
-                if(q.show&&!q.show(p.ans)) return "";
-                const val=p.ans[q.id];
-                if(val===undefined||val==="") return "";
-                const resVal=String(res[q.id]);
-                const ok=String(val)===resVal;
-                return`<span class="ans-item ${ok?"ans-ok":"ans-bad"}"><span class="ans-k">${q.label.split(" ").slice(-1)[0]}: </span>${val}${ok?" ✓":" ✗"}</span>`;
-              }).join("")}
-            </div>
-          </div>`;
-        }).join("")
-      }
+            <div><span style="color:${pc};font-weight:900;font-size:18px">${pts}</span><span style="color:#4A5568;font-size:10px">/${maxP}</span></div>
+          </div>
+          <div class="ans-grid">
+            ${Qs.map(q=>{
+              if(q.type==="score"||q.type==="et_score"||q.type==="pen_score")return"";
+              if(q.show&&!q.show(p.ans))return"";
+              const val=p.ans[q.id];if(val===undefined||val==="")return"";
+              const ok=String(val)===String(res[q.id]);
+              return`<span class="ans-item ${ok?"ans-ok":"ans-bad"}"><span class="ans-k">${q.label.split(" ").slice(-1)[0]}: </span>${val}${ok?" ✓":" ✗"}</span>`;
+            }).join("")}
+          </div>
+        </div>`;
+      }).join("")}
     </div>`;
   });
   if(!matches.length)html=`<div class="empty">No matches this day</div>`;
@@ -857,11 +808,9 @@ function renderResults(){
 }
 function setRDate(d){rDate=d;renderResults();}
 
-// ═══════════════════════════════════
-// LEADERBOARD
-// ═══════════════════════════════════
+// ── LEADERBOARD ────────────────────────────────────────────────────────────
 function renderLeaderboard(){
-  const allRes=loadAllResults(),allPreds=loadAllPreds(),tally={};
+  const allRes=lsLoadAllResults(),allPreds=lsLoadAllPreds(),tally={};
   allPreds.forEach(p=>{
     const res=allRes[p.matchId],nm=p.name;
     if(!tally[nm])tally[nm]={name:nm,total:0,matched:0,predicted:0};
@@ -871,27 +820,32 @@ function renderLeaderboard(){
   });
   const board=Object.values(tally).sort((a,b)=>b.total-a.total);
   const MEDALS=["🥇","🥈","🥉"];
-  if(!board.length){document.getElementById("lbContent").innerHTML=`<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏆</div><strong>Scores appear after match results</strong><p style="color:#4A5568;font-size:12px;margin-top:8px">Auto-fetched after each match ends</p></div>`;return;}
-  let html=`<div style="background:#0D1A0D;border:2px solid #00D563;border-radius:12px;padding:12px;margin-bottom:14px"><div style="color:#00D563;font-size:12px;font-weight:800">📊 LIVE CUMULATIVE SCORES</div><div style="color:#4A5568;font-size:10px;margin-top:2px">Highest first · Auto-updates after each match</div></div>`;
+  if(!board.length){document.getElementById("lbContent").innerHTML=`<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏆</div><strong>Scores appear after results are fetched</strong></div>`;return;}
+  let html=`<div style="background:#0D1A0D;border:2px solid #00D563;border-radius:12px;padding:12px;margin-bottom:14px"><div style="color:#00D563;font-size:12px;font-weight:800">📊 LIVE CUMULATIVE SCORES</div></div>`;
   board.forEach((p,i)=>{
     const isMe=p.name.toLowerCase()===CUR.name.toLowerCase();
     html+=`<div class="lbcard ${i===0?"gold":""}" style="${isMe?"outline:2px solid #60A5FA;outline-offset:2px":""}">
       <div style="font-size:${i<3?19:14}px;min-width:28px;text-align:center">${i<3?MEDALS[i]:`<span style="color:#4A5568;font-weight:700;font-size:12px">#${i+1}</span>`}</div>
       <div style="flex:1"><div style="color:${i===0?"#F59E0B":"#fff"};font-weight:700;font-size:14px">${p.name}${isMe?` <span style="color:#60A5FA;font-size:10px">(you)</span>`:""}</div>
         <div style="color:#4A5568;font-size:10px;margin-top:1px">${p.matched}/${p.predicted} matches scored</div></div>
-      <div style="text-align:right"><div style="color:${i===0?"#F59E0B":"#00D563"};font-weight:900;font-size:20px">${p.total}</div><div style="color:#4A5568;font-size:9px">pts total</div></div>
+      <div style="text-align:right"><div style="color:${i===0?"#F59E0B":"#00D563"};font-weight:900;font-size:20px">${p.total}</div><div style="color:#4A5568;font-size:9px">pts</div></div>
     </div>`;
   });
   document.getElementById("lbContent").innerHTML=html;
 }
 
-// ═══════════════════════════════════
-// ADMIN TAB
-// ═══════════════════════════════════
+// ── ADMIN TAB ──────────────────────────────────────────────────────────────
 function renderAdmin(){
+  // Sheet status
+  document.getElementById("sheetStatus").textContent = sheetReady
+    ? "✅ Connected — all predictions from all devices synced here"
+    : "⚠️  No Sheet URL set — showing local device data only (add SCRIPT_URL in HTML to enable cross-device sync)";
+
   document.getElementById("aStrip").innerHTML=stripHTML(aDate,"setADate");
   document.getElementById("adminPredsStrip").innerHTML=stripHTML(adminPredsDate,"setAdminPredsDate");
-  renderAdminResults();renderAdminAllPreds();renderAdminUsers();
+  renderAdminResults();
+  renderAdminAllPreds();
+  renderAdminUsers();
 }
 function setADate(d){aDate=d;renderAdminResults();}
 function setAdminPredsDate(d){adminPredsDate=d;renderAdminAllPreds();}
@@ -899,92 +853,112 @@ function setAdminPredsDate(d){adminPredsDate=d;renderAdminAllPreds();}
 function renderAdminResults(){
   const matches=S[aDate]||[];let html="";
   matches.forEach(m=>{
-    const res=loadResult(m.id);const isOver=over(m);
+    const res=lsLoadResult(m.id);const isOver=over(m);
     html+=`<div style="background:#111827;border:1.5px solid ${res?"#1A3A2A":"#1F2D42"};border-radius:12px;padding:11px;margin-bottom:9px">
       <div class="mhdr"><span style="font-size:12px;font-weight:700">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</span>
         ${res?`<span class="badge-ft">${res.sa}–${res.sb}${res.extra_time==="Yes"?" AET":""}</span>`:(isOver?`<span class="badge-live">OVER</span>`:`<span class="badge-ns">${m.time} ET</span>`)}
       </div>
-      ${res?`<div style="color:#00D563;font-size:10px;margin-bottom:4px">✅ Result saved · Winner: ${res.winner}${res.extra_time==="Yes"?` (AET${res.penalties_q==="Yes"?` Pen ${res.penA}–${res.penB}`:""})`:""}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
-          ${[["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],["HT",res.ht_winner],["Pen 90min",res.penalty_90]].map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563">${v}</span></span>`).join("")}
-        </div>`
-        :(isOver?`<button onclick="manualFetchResult('${m.id}')" style="width:100%;background:#0D2E1E;border:1px solid #00D563;color:#00D563;border-radius:7px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">🔄 Fetch Result Now</button>`
-        :`<div style="color:#4A5568;font-size:10px">Match starts ${m.time} ET</div>`)}
+      ${res
+        ?`<div style="color:#00D563;font-size:10px;">✅ Winner: ${res.winner}</div>
+           <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
+             ${[["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],["HT",res.ht_winner],["Pen90",res.penalty_90]].map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563">${v}</span></span>`).join("")}
+           </div>`
+        :(isOver
+          ?`<button onclick="manualFetchResult('${m.id}')" style="width:100%;background:#0D2E1E;border:1px solid #00D563;color:#00D563;border-radius:7px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">🔄 Fetch Result Now</button>`
+          :`<div style="color:#4A5568;font-size:10px">Match starts ${m.time} ET</div>`)}
     </div>`;
   });
   document.getElementById("adminResultsDiv").innerHTML=html||`<div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">No matches this day</div>`;
 }
 
 function renderAdminAllPreds(){
-  const matches=S[adminPredsDate]||[];let html="";
+  const matches=S[adminPredsDate]||[];
+  let html="";
+  let totalPreds=0;
+
   matches.forEach(m=>{
-    const res=loadResult(m.id);
-    const preds=loadMatchPreds(m.id).sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
-    if(!preds.length){
-      html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:11px;padding:11px;margin-bottom:9px"><div style="font-weight:700;font-size:12px;margin-bottom:5px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#4A5568;font-size:11px">No predictions yet</div></div>`;
-      return;
-    }
+    const res=lsLoadResult(m.id);
+    const preds=lsLoadMatchPreds(m.id).sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
+    totalPreds+=preds.length;
+
     html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:11px;overflow:hidden;margin-bottom:12px">
-      <div style="background:#0D1525;padding:10px 14px;border-bottom:1px solid #1F2D42">
-        <div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div>
-        ${res?`<div style="color:#00D563;font-size:11px;margin-top:3px">Final: ${res.sa}–${res.sb}${res.extra_time==="Yes"?` AET`:""}</div>`:`<div style="color:#4A5568;font-size:10px;margin-top:2px">Result pending</div>`}
-      </div>
-      ${preds.map((p,i)=>{
+      <div style="background:#0D1525;padding:10px 14px;border-bottom:1px solid #1F2D42;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div>
+          ${res?`<div style="color:#00D563;font-size:11px;margin-top:2px">Final: ${res.sa}–${res.sb}${res.extra_time==="Yes"?` AET`:""}</div>`:`<div style="color:#4A5568;font-size:10px;margin-top:2px">Result pending</div>`}
+        </div>
+        <div style="background:#1A2A3A;color:#8A9BBB;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px">${preds.length} player${preds.length!==1?"s":""}</div>
+      </div>`;
+
+    if(!preds.length){
+      html+=`<div style="padding:12px 14px;color:#4A5568;font-size:11px">No predictions yet</div>`;
+    } else {
+      const MEDALS=["🥇","🥈","🥉"];
+      preds.forEach((p,i)=>{
         const pts=calcScore(p,res);const maxP=maxPts(res);
-        const MEDALS=["🥇","🥈","🥉"];
-        return`<div style="padding:10px 14px;border-bottom:1px solid #1F2D42">
+        const pc=pts!==null?(pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171"):"#4A5568";
+        html+=`<div style="padding:10px 14px;border-bottom:1px solid #1F2D42">
+          <!-- Player header row -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:14px">${i<3?MEDALS[i]:`#${i+1}`}</span>
+              <span style="font-size:14px">${i<3?MEDALS[i]:`<span style='color:#4A5568;font-size:12px'>#${i+1}</span>`}</span>
               <span style="color:#00D563;font-weight:700;font-size:14px">${p.name}</span>
-              <span style="background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px">${p.sa}–${p.sb}${p.etA&&p.etA!==""?` ET:${p.etA}–${p.etB}`:""}${p.penA&&p.penA!==""?` Pen:${p.penA}–${p.penB}`:""}</span>
+              <span style="background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px">${p.sa}–${p.sb}${p.etA&&p.etA!==""?` ET:${p.etA}–${p.etB}`:""}${p.penA&&p.penA!==""?` Pen:${p.penA}–${p.penB}`:""}</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              ${pts!==null?`<span style="color:${pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171"};font-weight:900;font-size:16px">${pts}/${maxP}</span>`:`<span style="color:#4A5568;font-size:11px">Pending</span>`}
-            </div>
+            <span style="color:${pc};font-weight:900;font-size:16px">${pts!==null?pts+"/"+(maxP)+"pts":"Pending"}</span>
           </div>
+          <!-- All answers as pills -->
           <div style="display:flex;flex-wrap:wrap;gap:4px">
             ${Qs.map(q=>{
-              if(q.type==="score"||q.type==="et_score"||q.type==="pen_score") return "";
-              if(q.show&&!q.show(p.ans)) return "";
-              const val=p.ans[q.id];
-              if(val===undefined||val==="") return "";
+              if(q.type==="score"||q.type==="et_score"||q.type==="pen_score")return"";
+              if(q.show&&!q.show(p.ans))return"";
+              const val=p.ans[q.id];if(val===undefined||val==="")return"";
               const resVal=res?String(res[q.id]):null;
-              const ok=resVal&&String(val)===resVal;
-              const bad=resVal&&!ok;
-              return`<span class="ans-item ${ok?"ans-ok":bad?"ans-bad":""}"><span class="ans-k">${q.label.split(" ").slice(-1)[0]}: </span>${val}${ok?" ✓":bad?" ✗":""}</span>`;
+              const ok=resVal&&String(val)===resVal,bad=resVal&&!ok;
+              return`<span class="ans-item ${ok?"ans-ok":bad?"ans-bad":""}">
+                <span class="ans-k">${q.label}: </span>${val}${ok?" ✓":bad?" ✗":""}
+              </span>`;
             }).join("")}
           </div>
         </div>`;
-      }).join("")}
-    </div>`;
+      });
+    }
+    html+=`</div>`;
   });
-  document.getElementById("adminAllPredsDiv").innerHTML=html||`<div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">No predictions for this day</div>`;
+
+  if(totalPreds===0){
+    html+=`<div class="empty" style="margin-top:8px">
+      <div style="font-size:28px;margin-bottom:8px">👥</div>
+      <strong>No predictions yet for this day</strong>
+      <p style="color:#4A5568;font-size:11px;margin-top:8px">${sheetReady?"Click 🔄 Refresh All to pull latest from Google Sheet":"Set up SCRIPT_URL in the HTML to see predictions from other devices"}</p>
+    </div>`;
+  }
+  document.getElementById("adminAllPredsDiv").innerHTML=html;
 }
 
 function renderAdminUsers(){
-  // Build users list from DB
-  const regUsers=[];
-  Object.entries(DB).filter(([k])=>k.startsWith("user:")).forEach(([k,v])=>{
-    if(v&&v.displayName) regUsers.push({name:v.displayName,pw:v.pw});
-  });
-  const allPreds=loadAllPreds(),byUser={};
+  const allPreds=lsLoadAllPreds(),byUser={};
   allPreds.forEach(p=>{const nm=p.name.toLowerCase();if(!byUser[nm])byUser[nm]={name:p.name,count:0};byUser[nm].count++;});
-  let html=`<div style="color:#6B7A99;font-size:10px;margin-bottom:8px">Synced from Google Sheet · All registered players</div>`;
+  const regUsers=[];
+  for(const k in localStorage) if(k.startsWith("user:")){const d=JSON.parse(localStorage[k]);regUsers.push({name:d.displayName,pw:d.pw});}
+  let html=`<div style="color:#6B7A99;font-size:10px;margin-bottom:8px">Admin can reveal forgotten passwords</div>`;
   regUsers.sort((a,b)=>a.name.localeCompare(b.name)).forEach(u=>{
     const info=byUser[u.name.toLowerCase()]||{count:0};
     html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center">
       <div><div style="color:#00D563;font-weight:700;font-size:13px">${u.name}</div><div style="color:#4A5568;font-size:10px">${info.count} prediction${info.count!==1?"s":""}</div></div>
       <div style="display:flex;gap:6px">
         <button onclick="revealPw('${u.name}','${u.pw}')" style="background:#1A2A3A;border:1px solid #1F3A52;color:#60A5FA;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">🔑 PW</button>
+        ${info.count>0?`<button onclick="delAllUser('${u.name.toLowerCase()}')" style="background:#1A0808;border:1px solid #3A1A1A;color:#F87171;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">🗑️ All</button>`:""}
       </div>
     </div>`;
   });
-  if(!regUsers.length)html+=`<div style="color:#4A5568;font-size:12px;text-align:center;padding:12px">No users yet</div>`;
+  if(!regUsers.length)html+=`<div style="color:#4A5568;font-size:12px;text-align:center;padding:12px">No users registered yet</div>`;
   document.getElementById("adminUsersDiv").innerHTML=html;
 }
 
 function revealPw(name,pw){alert(`Password for ${name}:\n\n${pw}\n\nShare privately.`);}
+function delKey(key){if(!confirm("Delete this prediction?"))return;localStorage.removeItem(key);renderAdminAllPreds();renderAdminUsers();renderLeaderboard();}
+function delAllUser(nameLower){if(!confirm("Delete ALL predictions by "+nameLower+"?"))return;let c=0;for(const k in localStorage)if(k.startsWith("pred:")&&k.endsWith(":"+nameLower)){localStorage.removeItem(k);c++;}alert("✅ Deleted "+c+" predictions");renderAdminAllPreds();renderAdminUsers();renderLeaderboard();}
 </script>
 </body>
 </html>
