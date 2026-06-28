@@ -270,7 +270,7 @@ input:focus{border-color:#00D563}
 // ══════════════════════════════════════════════════════════════════════
 // ① PASTE YOUR GOOGLE APPS SCRIPT URL BELOW (from Code.gs deployment)
 // ══════════════════════════════════════════════════════════════════════
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztO3sEGuM4zMdRpIGMGL3UXMhI2_wVI4gHkijtdXwVM34QPs5z4uNmCI5yqEhK6M-XCw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4lxs6PLBL_Xn-oiv3zMzlKjAP6Z5XHItzwV9G1EEVYNIVWB9nPZ9YpAnsZvZ1wJfyDw/exec";
 // Example: "https://script.google.com/macros/d/AKfycbx.../exec"
 // If blank, app works locally only (predictions NOT shared across devices)
 // ══════════════════════════════════════════════════════════════════════
@@ -341,7 +341,7 @@ function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).to
 function allMatches(){return Object.values(S).flat();}
 
 // ── SHEET API (with localStorage fallback) ─────────────────────────────────
-const sheetReady = SCRIPT_URL && SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbztO3sEGuM4zMdRpIGMGL3UXMhI2_wVI4gHkijtdXwVM34QPs5z4uNmCI5yqEhK6M-XCw/exec";
+const sheetReady = SCRIPT_URL && SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbx4lxs6PLBL_Xn-oiv3zMzlKjAP6Z5XHItzwV9G1EEVYNIVWB9nPZ9YpAnsZvZ1wJfyDw/exec";
 
 async function sheetCall(action, payload={}) {
   if (!sheetReady) return null;
