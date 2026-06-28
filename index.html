@@ -92,7 +92,7 @@ input:focus{border-color:#00D563}
       <div style="font-size:48px;margin-bottom:6px">⚽</div>
       <div style="color:#00D563;font-size:11px;font-weight:700;letter-spacing:1.5px">BIKELER ADDA</div>
       <h1 style="font-size:21px;font-weight:800;margin:4px 0 2px">FIFA World Cup <span style="color:#00D563">2026</span></h1>
-      <p style="color:#6B7A99;font-size:12px">FIFA Round of 32 · Predictions</p>
+      <p style="color:#6B7A99;font-size:12px">Round of 32 · Predictions</p>
     </div>
     <div class="fcard">
       <div id="loginMsg" style="display:none;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;text-align:center"></div>
@@ -212,8 +212,7 @@ input:focus{border-color:#00D563}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div style="color:#F87171;font-size:12px;font-weight:700">👥 All Players · Answers & Scores</div>
       </div>
-      <div style="color:#4A5568;font-size:10px;margin-bottom:10px">Admin only — all devices synced via Google Sheet</div>
-      <div class="dstrip" id="adminPredsStrip"></div>
+      <div style="color:#4A5568;font-size:10px;margin-bottom:10px">Admin only — all devices synced via Google Sheet · all matches shown</div>
       <div id="adminAllPredsDiv"></div>
     </div>
 
@@ -674,7 +673,7 @@ function showTab(t,btn){
   if(t==="myBets")    renderMyBets();
   if(t==="results")   renderResults();
   if(t==="leaderboard")renderLeaderboard();
-  if(t==="admin"){syncDown().then(()=>renderAdmin());}
+  if(t==="admin")     renderAdmin();
 }
 
 // ── DATE STRIP ─────────────────────────────────────────────────────────────
@@ -937,134 +936,233 @@ function renderLeaderboard(){
 }
 
 // ── ADMIN TAB ──────────────────────────────────────────────────────────────
-function renderAdmin(){
-  // Sheet status
-  document.getElementById("sheetStatus").textContent = sheetReady
-    ? "✅ Connected — all predictions from all devices synced here"
-    : "⚠️  Connection failed — click 🔗 Change URL to update the Apps Script URL";
+async function renderAdmin(){
+  const changeBtn=document.getElementById("changeUrlBtn");
+  if(changeBtn) changeBtn.style.display="inline-block";
 
-  // Show change URL button always in admin
-  const changeBtn = document.getElementById("changeUrlBtn");
-  if(changeBtn) changeBtn.style.display = "inline-block";
+  // Show loading state immediately
+  document.getElementById("adminAllPredsDiv").innerHTML=
+    `<div style="color:#60A5FA;font-size:13px;text-align:center;padding:24px">🔄 Syncing from Google Sheet…</div>`;
+  document.getElementById("adminUsersDiv").innerHTML=
+    `<div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">🔄 Loading…</div>`;
 
   document.getElementById("aStrip").innerHTML=stripHTML(aDate,"setADate");
-  document.getElementById("adminPredsStrip").innerHTML=stripHTML(adminPredsDate,"setAdminPredsDate");
   renderAdminResults();
+
+  // Sync from sheet then render
+  await syncDown();
+
+  document.getElementById("sheetStatus").textContent = sheetReady
+    ? "✅ Connected — showing all players from all devices"
+    : "⚠️  Not connected — showing local data only. Click 🔗 Change URL.";
+
   renderAdminAllPreds();
   renderAdminUsers();
 }
+
 function setADate(d){aDate=d;renderAdminResults();}
-function setAdminPredsDate(d){adminPredsDate=d;renderAdminAllPreds();}
 
 function renderAdminResults(){
   const matches=S[aDate]||[];let html="";
   matches.forEach(m=>{
     const res=lsLoadResult(m.id);const isOver=over(m);
     html+=`<div style="background:#111827;border:1.5px solid ${res?"#1A3A2A":"#1F2D42"};border-radius:12px;padding:11px;margin-bottom:9px">
-      <div class="mhdr"><span style="font-size:12px;font-weight:700">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</span>
+      <div class="mhdr">
+        <span style="font-size:12px;font-weight:700">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</span>
         ${res?`<span class="badge-ft">${res.sa}–${res.sb}${res.extra_time==="Yes"?" AET":""}</span>`:(isOver?`<span class="badge-live">OVER</span>`:`<span class="badge-ns">${m.time} ET</span>`)}
       </div>
       ${res
         ?`<div style="color:#00D563;font-size:10px;">✅ Winner: ${res.winner}</div>
-           <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
-             ${[["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],["HT",res.ht_winner],["Pen90",res.penalty_90]].map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563">${v}</span></span>`).join("")}
-           </div>`
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
+            ${[["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],["HT",res.ht_winner],["Pen(90)",res.penalty_90]]
+              .map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563">${v}</span></span>`).join("")}
+          </div>`
         :(isOver
           ?`<button onclick="manualFetchResult('${m.id}')" style="width:100%;background:#0D2E1E;border:1px solid #00D563;color:#00D563;border-radius:7px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">🔄 Fetch Result Now</button>`
           :`<div style="color:#4A5568;font-size:10px">Match starts ${m.time} ET</div>`)}
     </div>`;
   });
-  document.getElementById("adminResultsDiv").innerHTML=html||`<div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">No matches this day</div>`;
+  document.getElementById("adminResultsDiv").innerHTML=
+    html||`<div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">No matches this day</div>`;
 }
 
+// Shows ALL predictions across ALL dates — no date filter
 function renderAdminAllPreds(){
-  const matches=S[adminPredsDate]||[];
-  let html="";
-  let totalPreds=0;
+  const allPreds=lsLoadAllPreds();
+  const allRes=lsLoadAllResults();
+  const MEDALS=["🥇","🥈","🥉"];
 
-  matches.forEach(m=>{
-    const res=lsLoadResult(m.id);
-    const preds=lsLoadMatchPreds(m.id).sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
-    totalPreds+=preds.length;
-
-    html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:11px;overflow:hidden;margin-bottom:12px">
-      <div style="background:#0D1525;padding:10px 14px;border-bottom:1px solid #1F2D42;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div>
-          ${res?`<div style="color:#00D563;font-size:11px;margin-top:2px">Final: ${res.sa}–${res.sb}${res.extra_time==="Yes"?` AET`:""}</div>`:`<div style="color:#4A5568;font-size:10px;margin-top:2px">Result pending</div>`}
-        </div>
-        <div style="background:#1A2A3A;color:#8A9BBB;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px">${preds.length} player${preds.length!==1?"s":""}</div>
+  if(!allPreds.length){
+    document.getElementById("adminAllPredsDiv").innerHTML=`
+      <div class="empty">
+        <div style="font-size:28px;margin-bottom:8px">👥</div>
+        <strong>No predictions found</strong>
+        <p style="color:#4A5568;font-size:11px;margin-top:8px">
+          ${sheetReady?"Players need to make predictions first. Click 🔄 Refresh All after they do.":"Google Sheet not connected — click 🔗 Change URL."}
+        </p>
       </div>`;
+    return;
+  }
 
-    if(!preds.length){
-      html+=`<div style="padding:12px 14px;color:#4A5568;font-size:11px">No predictions yet</div>`;
-    } else {
-      const MEDALS=["🥇","🥈","🥉"];
-      preds.forEach((p,i)=>{
+  // Group by matchId, sorted
+  const byMatch={};
+  allPreds.forEach(p=>{
+    if(!byMatch[p.matchId])byMatch[p.matchId]=[];
+    byMatch[p.matchId].push(p);
+  });
+
+  let html=`<div style="background:#0D1A2A;border:1px solid #1F3A52;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+    <span style="color:#60A5FA;font-size:12px;font-weight:700">📋 ${allPreds.length} total predictions from ${Object.keys(byMatch).length} match${Object.keys(byMatch).length!==1?"es":""}</span>
+  </div>`;
+
+  Object.keys(byMatch).sort().forEach(matchId=>{
+    const m=allMatches().find(x=>x.id===matchId)||{t1:"?",t2:"?",venue:"?"};
+    const res=allRes[matchId];
+    const preds=byMatch[matchId].sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
+
+    html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:14px;overflow:hidden;margin-bottom:14px">
+      <!-- Match header -->
+      <div style="background:#0D1525;padding:12px 16px;border-bottom:1px solid #1F2D42;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700;font-size:14px">${f(m.t1)} ${m.t1} <span style="color:#4A5568">vs</span> ${m.t2} ${f(m.t2)}</div>
+          <div style="color:#4A5568;font-size:10px;margin-top:2px">${m.venue||""}</div>
+          ${res?`<div style="color:#00D563;font-size:11px;margin-top:3px;font-weight:700">✅ Result: ${res.sa}–${res.sb}${res.extra_time==="Yes"?" (AET)":""}</div>`:""}
+        </div>
+        <span style="background:#1A2A3A;color:#8A9BBB;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px">${preds.length} player${preds.length!==1?"s":""}</span>
+      </div>
+
+      <!-- Each player's full answer -->
+      ${preds.map((p,i)=>{
         const pts=calcScore(p,res);const maxP=maxPts(res);
         const pc=pts!==null?(pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171"):"#4A5568";
-        html+=`<div style="padding:10px 14px;border-bottom:1px solid #1F2D42">
-          <!-- Player header row -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        return`<div style="padding:12px 16px;border-bottom:1px solid #1F2D42">
+          <!-- Name + score row -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:14px">${i<3?MEDALS[i]:`<span style='color:#4A5568;font-size:12px'>#${i+1}</span>`}</span>
-              <span style="color:#00D563;font-weight:700;font-size:14px">${p.name}</span>
-              <span style="background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px">${p.sa}–${p.sb}${p.etA&&p.etA!==""?` ET:${p.etA}–${p.etB}`:""}${p.penA&&p.penA!==""?` Pen:${p.penA}–${p.penB}`:""}</span>
+              <span style="font-size:${i<3?16:13}px">${i<3?MEDALS[i]:`<span style='color:#4A5568'>#${i+1}</span>`}</span>
+              <span style="color:#00D563;font-weight:700;font-size:15px">${p.name}</span>
             </div>
-            <span style="color:${pc};font-weight:900;font-size:16px">${pts!==null?pts+"/"+(maxP)+"pts":"Pending"}</span>
+            <div style="text-align:right">
+              <div style="color:${pc};font-weight:900;font-size:18px">${pts!==null?pts:"—"}</div>
+              <div style="color:#4A5568;font-size:10px">${pts!==null?"/ "+maxP+" pts":"pending"}</div>
+            </div>
           </div>
-          <!-- All answers as pills -->
+          <!-- Predicted score -->
+          <div style="display:flex;align-items:center;gap:10px;background:#0A0E1A;border-radius:8px;padding:8px 12px;margin-bottom:8px">
+            <div style="flex:1;text-align:center">
+              <div style="color:#60A5FA;font-size:10px;font-weight:600">${f(m.t1)} ${m.t1}</div>
+              <div style="font-size:24px;font-weight:900">${p.sa||"–"}</div>
+            </div>
+            <div style="color:#4A5568;font-size:18px;font-weight:700">–</div>
+            <div style="flex:1;text-align:center">
+              <div style="color:#F87171;font-size:10px;font-weight:600">${f(m.t2)} ${m.t2}</div>
+              <div style="font-size:24px;font-weight:900">${p.sb||"–"}</div>
+            </div>
+          </div>
+          <!-- All answers -->
           <div style="display:flex;flex-wrap:wrap;gap:4px">
             ${Qs.map(q=>{
-              if(q.type==="score"||q.type==="et_score"||q.type==="pen_score")return"";
-              if(q.show&&!q.show(p.ans))return"";
-              const val=p.ans[q.id];if(val===undefined||val==="")return"";
+              if(q.type==="score"||q.type==="et_score"||q.type==="pen_score") return "";
+              if(q.show&&!q.show(p.ans)) return "";
+              const val=p.ans[q.id];
+              if(val===undefined||val==="") return "";
               const resVal=res?String(res[q.id]):null;
-              const ok=resVal&&String(val)===resVal,bad=resVal&&!ok;
+              const ok=resVal&&String(val)===resVal;
+              const bad=resVal&&!ok;
               return`<span class="ans-item ${ok?"ans-ok":bad?"ans-bad":""}">
-                <span class="ans-k">${q.label}: </span>${val}${ok?" ✓":bad?" ✗":""}
+                <span class="ans-k">${q.label}: </span><strong>${val}</strong>${ok?" ✓":bad?" ✗":""}
               </span>`;
             }).join("")}
           </div>
         </div>`;
-      });
-    }
-    html+=`</div>`;
+      }).join("")}
+    </div>`;
   });
 
-  if(totalPreds===0){
-    html+=`<div class="empty" style="margin-top:8px">
-      <div style="font-size:28px;margin-bottom:8px">👥</div>
-      <strong>No predictions yet for this day</strong>
-      <p style="color:#4A5568;font-size:11px;margin-top:8px">${sheetReady?"Click 🔄 Refresh All to pull latest from Google Sheet":"Set up SCRIPT_URL in the HTML to see predictions from other devices"}</p>
-    </div>`;
-  }
   document.getElementById("adminAllPredsDiv").innerHTML=html;
 }
 
+// User management — password visible, delete button
 function renderAdminUsers(){
-  const allPreds=lsLoadAllPreds(),byUser={};
-  allPreds.forEach(p=>{const nm=p.name.toLowerCase();if(!byUser[nm])byUser[nm]={name:p.name,count:0};byUser[nm].count++;});
+  // Collect users from localStorage (populated by syncDown)
   const regUsers=[];
-  for(const k in localStorage) if(k.startsWith("user:")){const d=JSON.parse(localStorage[k]);regUsers.push({name:d.displayName,pw:d.pw});}
-  let html=`<div style="color:#6B7A99;font-size:10px;margin-bottom:8px">Admin can reveal forgotten passwords</div>`;
+  for(const k in localStorage){
+    if(k.startsWith("user:")){
+      try{
+        const d=JSON.parse(localStorage[k]);
+        if(d&&d.displayName) regUsers.push({name:d.displayName,pw:d.pw||"?"});
+      }catch(e){}
+    }
+  }
+
+  const allPreds=lsLoadAllPreds(),byUser={};
+  allPreds.forEach(p=>{
+    const nm=p.name.toLowerCase();
+    if(!byUser[nm])byUser[nm]={name:p.name,count:0};
+    byUser[nm].count++;
+  });
+
+  if(!regUsers.length){
+    document.getElementById("adminUsersDiv").innerHTML=`
+      <div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">
+        No users yet. Click 🔄 Refresh All to load from Google Sheet.
+      </div>`;
+    return;
+  }
+
+  let html=`<div style="color:#6B7A99;font-size:11px;margin-bottom:10px">${regUsers.length} registered player${regUsers.length!==1?"s":""}  · Tap 👁️ to show password</div>`;
+
   regUsers.sort((a,b)=>a.name.localeCompare(b.name)).forEach(u=>{
     const info=byUser[u.name.toLowerCase()]||{count:0};
-    html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center">
-      <div><div style="color:#00D563;font-weight:700;font-size:13px">${u.name}</div><div style="color:#4A5568;font-size:10px">${info.count} prediction${info.count!==1?"s":""}</div></div>
-      <div style="display:flex;gap:6px">
-        <button onclick="revealPw('${u.name}','${u.pw}')" style="background:#1A2A3A;border:1px solid #1F3A52;color:#60A5FA;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">🔑 PW</button>
-        ${info.count>0?`<button onclick="delAllUser('${u.name.toLowerCase()}')" style="background:#1A0808;border:1px solid #3A1A1A;color:#F87171;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">🗑️ All</button>`:""}
+    const safeId="pw_"+u.name.replace(/[^a-z0-9]/gi,"_");
+    html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:12px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="color:#00D563;font-weight:700;font-size:14px">${u.name}</div>
+          <div style="color:#4A5568;font-size:10px;margin-top:2px">${info.count} prediction${info.count!==1?"s":""}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="togglePw('${safeId}')" style="background:#1A2A3A;border:1px solid #1F3A52;color:#60A5FA;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">👁️ Password</button>
+          <button onclick="delUser('${u.name}')" style="background:#1A0808;border:1px solid #3A1A1A;color:#F87171;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">🗑️ Delete</button>
+        </div>
+      </div>
+      <!-- Hidden password row -->
+      <div id="${safeId}" style="display:none;margin-top:10px;background:#0A0E1A;border:1.5px solid #1F3A52;border-radius:8px;padding:10px;display:none">
+        <div style="color:#4A5568;font-size:10px;margin-bottom:4px">PASSWORD</div>
+        <div style="color:#00D563;font-size:22px;font-weight:900;letter-spacing:4px">${u.pw}</div>
+        <div style="color:#4A5568;font-size:10px;margin-top:4px">Share this privately with ${u.name}</div>
       </div>
     </div>`;
   });
-  if(!regUsers.length)html+=`<div style="color:#4A5568;font-size:12px;text-align:center;padding:12px">No users registered yet</div>`;
+
   document.getElementById("adminUsersDiv").innerHTML=html;
 }
 
-function revealPw(name,pw){alert(`Password for ${name}:\n\n${pw}\n\nShare privately.`);}
-function delKey(key){if(!confirm("Delete this prediction?"))return;localStorage.removeItem(key);renderAdminAllPreds();renderAdminUsers();renderLeaderboard();}
-function delAllUser(nameLower){if(!confirm("Delete ALL predictions by "+nameLower+"?"))return;let c=0;for(const k in localStorage)if(k.startsWith("pred:")&&k.endsWith(":"+nameLower)){localStorage.removeItem(k);c++;}alert("✅ Deleted "+c+" predictions");renderAdminAllPreds();renderAdminUsers();renderLeaderboard();}
+function togglePw(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.style.display=el.style.display==="block"?"none":"block";
+}
+
+function delUser(name){
+  if(!confirm(`Delete ALL data for "${name}"?\n\nThis removes their predictions from this device.\n(Their data in Google Sheet is NOT deleted — to remove from Sheet, delete the row manually.)`)) return;
+  let c=0;
+  const nameLower=name.toLowerCase();
+  for(const k of Object.keys(localStorage)){
+    if(k==="user:"+nameLower||
+       (k.startsWith("pred:")&&k.endsWith(":"+nameLower))){
+      localStorage.removeItem(k);c++;
+    }
+  }
+  showBanner(`✅ Removed ${c} records for ${name} from this device.`,"#F59E0B");
+  renderAdminAllPreds();
+  renderAdminUsers();
+  renderLeaderboard();
+}
+
+function revealPw(name,pw){alert(`Password for ${name}:\n\n${pw}`);}
+function delKey(key){if(!confirm("Delete this prediction?"))return;localStorage.removeItem(key);renderAdminAllPreds();renderLeaderboard();}
+function delAllUser(nameLower){delUser(nameLower);}
 </script>
 </body>
 </html>
