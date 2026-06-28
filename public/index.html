@@ -379,7 +379,7 @@ function enterApp(name,isAdmin){
   document.getElementById("mainApp").style.display="block";
   document.getElementById("curName").textContent=name;
   if(isAdmin){document.getElementById("adminBadge").style.display="inline";document.getElementById("adminTabBtn").style.display="block";}
-  renderPredict();
+  syncFromGoogleSheet().then(()=>renderPredict());
   // Auto-fetch pending results in background
   setTimeout(autoFetchPending,1000);
 }
@@ -400,9 +400,24 @@ function logout(){
 // ═══════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════
+// GOOGLE SHEET BACKEND
+// Paste your Google Apps Script Web App URL here
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbySJrR6UHiY5Y9RIP90tXeEiryDHTXg-DXO9PGiikgS63Rm49N_rUfY6UndISkuKcnkag/exec";
+
 function savePred(matchId,name,ans,sa,sb,etA,etB,penA,penB){
-  localStorage.setItem("pred:"+matchId+":"+name.toLowerCase(),JSON.stringify({name,matchId,ans,sa,sb,etA,etB,penA,penB,savedAt:Date.now()}));
+  const data={name,matchId,ans,sa,sb,etA,etB,penA,penB,savedAt:Date.now()};
+  localStorage.setItem("pred:"+matchId+":"+name.toLowerCase(),JSON.stringify(data));
+
+  if(SHEET_API_URL.includes("script.google.com")){
+    fetch(SHEET_API_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action:"savePrediction",data})
+    }).catch(e=>console.log(e));
+  }
 }
+
 function loadMyPreds(name){
   const out=[];
   for(const k in localStorage) if(k.startsWith("pred:")&&k.endsWith(":"+name.toLowerCase())) out.push(JSON.parse(localStorage[k]));
@@ -418,6 +433,16 @@ function loadAllPreds(){
   for(const k in localStorage) if(k.startsWith("pred:")) out.push(JSON.parse(localStorage[k]));
   return out;
 }
+
+async function syncFromGoogleSheet(){
+  if(!SHEET_API_URL.includes("script.google.com")) return;
+  try{
+    const r=await fetch(SHEET_API_URL+"?action=getPredictions");
+    const data=await r.json();
+    data.forEach(p=>localStorage.setItem("pred:"+p.matchId+":"+p.name.toLowerCase(),JSON.stringify(p)));
+  }catch(e){console.log("Sheet sync failed",e);}
+}
+
 function saveResult(matchId,res){localStorage.setItem("res:"+matchId,JSON.stringify(res));}
 function loadResult(matchId){const v=localStorage.getItem("res:"+matchId);return v?JSON.parse(v):null;}
 function loadAllResults(){
@@ -526,7 +551,7 @@ function showTab(t,btn){
   if(t==="myBets")renderMyBets();
   if(t==="results")renderResults();
   if(t==="leaderboard")renderLeaderboard();
-  if(t==="admin")renderAdmin();
+  if(t==="admin"){syncFromGoogleSheet().then(()=>renderAdmin());}
 }
 
 // ═══════════════════════════════════
