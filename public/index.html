@@ -88,4 +88,87 @@ async function adminRefresh() {
       showAdminUsers();
     }
   } catch(e) {
-    showBanner("❌ Failed to reach backend
+    showBanner("❌ Failed to reach backend API.", "#EF4444");
+  }
+}
+
+// Renders the entire database block with credentials and core triggers
+function showAdminUsers() {
+  let html = "";
+  let userKeys = Object.keys(localStorage).filter(k => k.startsWith("user:"));
+  
+  if (userKeys.length === 0) {
+    document.getElementById("adminUsersDiv").innerHTML = `<div style="color:#4A5568;font-size:13px;text-align:center;padding:10px;">No cached profiles. Click sync to retrieve spreadsheet data.</div>`;
+    return;
+  }
+
+  userKeys.forEach(k => {
+    let u = JSON.parse(localStorage.getItem(k));
+    if (!u || !u.displayName) return;
+    
+    // Normalize target safe HTML ID string names
+    let safeId = "pw-" + u.displayName.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    html += `
+    <div class="user-row">
+      <div>
+        <strong style="font-size:14px;color:#fff;">${u.displayName}</strong>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="togglePw('${safeId}')" style="background:#1A2A3A;border:none;color:#60A5FA;padding:6px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">🔑 View Pass</button>
+        <button onclick="deleteUserPermanently('${u.displayName}')" style="background:#2A1A1A;border:none;color:#F87171;padding:6px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">🗑️ Delete</button>
+      </div>
+    </div>
+    <div id="${safeId}" class="pw-box">
+      <div style="color:#4A5568;font-size:10px;margin-bottom:4px;font-weight:bold;letter-spacing:1px;">USER PASSWORD</div>
+      <div style="color:#00D563;font-size:20px;font-weight:900;letter-spacing:3px;">${u.pw || 'N/A'}</div>
+      <div style="color:#4A5568;font-size:11px;margin-top:4px;">Provide this value if they forgot their credentials.</div>
+    </div>`;
+  });
+
+  document.getElementById("adminUsersDiv").innerHTML = html;
+}
+
+function togglePw(id) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.display = el.style.display === "block" ? "none" : "block";
+}
+
+// Executes an infrastructure purge request back to the underlying Google App Script
+async function deleteUserPermanently(name) {
+  if (!confirm(`⚠️ DANGER: COMPLETE REMOVAL REQ!\n\nAre you sure you want to completely erase "${name}"?\nThis removes their registration row and clears all matching predictions from Google Sheets.`)) return;
+
+  showBanner(`Deleting ${name} from system...`, "#F59E0B");
+
+  try {
+    let response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "deleteUser", name: name })
+    });
+    let result = await response.json();
+
+    if (result.error) {
+      showBanner("❌ Error from remote server: " + result.error, "#EF4444");
+      return;
+    }
+
+    // Purge related dataset elements across local client device storage map
+    let c = 0;
+    const nameLower = name.toLowerCase();
+    for (const k of Object.keys(localStorage)) {
+      if (k === "user:" + nameLower || (k.startsWith("pred:") && k.endsWith(":" + nameLower))) {
+        localStorage.removeItem(k);
+        c++;
+      }
+    }
+
+    showBanner(`✅ Purged database row and cleared ${c} local records for ${name}.`, "#00D563");
+    showAdminUsers();
+  } catch(e) {
+    showBanner("❌ Connection refused by destination proxy deployment.", "#EF4444");
+  }
+}
+</script>
+</body>
+</html>
