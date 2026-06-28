@@ -437,43 +437,43 @@ function over(m){return new Date()>=new Date(new Date(m.ko).getTime()+115*60000)
 function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
 function allMatches(){return Object.values(S).flat();}
 
-// ── SHEET API (with localStorage fallback) ─────────────────────────────────
+// ── SHEET API — GET for reads (CORS-safe), no-cors POST for writes ────────
 const sheetReady = !!SCRIPT_URL && SCRIPT_URL.includes("script.google.com");
 
 async function sheetCall(action, payload={}) {
   if (!sheetReady) return null;
   try {
-    // Note: No Content-Type header — avoids CORS preflight that GAS can't handle
-    const resp = await fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({action, ...payload})
-    });
-    const text = await resp.text();
-    return JSON.parse(text);
+    if (action==="loadAll"||action==="checkUser"||action==="fetchResults") {
+      // READ: use GET — GAS always returns CORS headers for GET requests
+      const p = new URLSearchParams({action,...payload,_t:Date.now()});
+      const resp = await fetch(SCRIPT_URL+"?"+p.toString(),{cache:"no-store"});
+      return JSON.parse(await resp.text());
+    }
+    // WRITE: no-cors POST (fire and forget — we don't need the response)
+    fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",body:JSON.stringify({action,...payload})});
+    return {success:true};
   } catch(e) {
-    console.warn("Sheet API error:", action, e.message);
+    console.warn("Sheet API error:",action,e.message);
     return null;
   }
 }
 
-// Pull everything from Sheet into localStorage
 async function syncDown() {
   if (!sheetReady) { setSyncUI(false); return; }
-  setSyncUI(null); // busy
-  const data = await sheetCall("loadAll");
-  if (!data || data.error) { setSyncUI(false); return; }
-  // Merge into localStorage  (sheet wins for other-device keys)
-  Object.entries(data).forEach(([k,v]) => {
-    const local = localStorage.getItem(k);
-    const existing = local ? JSON.parse(local) : null;
-    // For predictions: keep whichever is newer
-    const incomingSaved = v && v.savedAt ? v.savedAt : 0;
-    const localSaved = existing && existing.savedAt ? existing.savedAt : 0;
-    if (!existing || incomingSaved >= localSaved) {
-      localStorage.setItem(k, JSON.stringify(v));
-    }
-  });
-  setSyncUI(true);
+  setSyncUI(null);
+  try {
+    const data = await sheetCall("loadAll");
+    if (!data||data.error) { setSyncUI(false); return; }
+    Object.entries(data).forEach(([k,v]) => {
+      try {
+        const ex = localStorage.getItem(k);
+        const existing = ex ? JSON.parse(ex) : null;
+        const inS = v&&v.savedAt?v.savedAt:0, inL = existing&&existing.savedAt?existing.savedAt:0;
+        if (!existing||inS>=inL) localStorage.setItem(k, JSON.stringify(v));
+      } catch(e) {}
+    });
+    setSyncUI(true);
+  } catch(e) { setSyncUI(false); }
 }
 
 // Push one prediction to Sheet (fire-and-forget)
@@ -603,13 +603,38 @@ function showMsg(msg,ok){const el=document.getElementById("loginMsg");el.style.d
 function hideMsg(){document.getElementById("loginMsg").style.display="none";}
 function setStep(s){["stepName","stepNew","stepReturn","stepAdmin"].forEach(x=>document.getElementById(x).style.display="none");document.getElementById(s).style.display="block";}
 
-function checkName(){
+async function checkName(){
   const nm=document.getElementById("loginName").value.trim();
   if(!nm){showMsg("Please enter your name");return;}
   hideMsg();_pName=nm;
+  // Check localStorage first (fast)
   const stored=localStorage.getItem("user:"+nm.toLowerCase());
-  if(stored){document.getElementById("retName").textContent=nm;document.getElementById("loginPw").value="";setStep("stepReturn");}
-  else{_pPw=genPw();document.getElementById("newName").textContent=nm;document.getElementById("genPw").textContent=_pPw;setStep("stepNew");}
+  if(stored){
+    const d=JSON.parse(stored);
+    document.getElementById("retName").textContent=d.displayName||nm;
+    document.getElementById("loginPw").value="";
+    setStep("stepReturn");
+    return;
+  }
+  // Check sheet (catches users who registered on another device)
+  if(sheetReady){
+    showMsg("Checking…",true);
+    const result=await sheetCall("checkUser",{name:nm});
+    hideMsg();
+    if(result&&result.found){
+      localStorage.setItem("user:"+nm.toLowerCase(),JSON.stringify({displayName:result.displayName,pw:result.pw}));
+      document.getElementById("retName").textContent=result.displayName;
+      document.getElementById("loginPw").value="";
+      setStep("stepReturn");
+      return;
+    }
+  }
+  hideMsg();
+  // New user — generate password
+  _pPw=genPw();
+  document.getElementById("newName").textContent=nm;
+  document.getElementById("genPw").textContent=_pPw;
+  setStep("stepNew");
 }
 function copyPw(){navigator.clipboard.writeText(_pPw).catch(()=>{});const btn=event.target;btn.textContent="✅ Copied!";setTimeout(()=>btn.textContent="📋 Copy",2000);}
 function registerUser(){
