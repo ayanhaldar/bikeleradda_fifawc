@@ -202,6 +202,7 @@ input:focus{border-color:#00D563}
           <div id="sheetStatus" style="color:#4A5568;font-size:10px;margin-top:2px">Checking connection…</div>
         </div>
         <button onclick="adminRefresh()" style="background:#0D2E1E;border:1px solid #00D563;color:#00D563;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">🔄 Refresh All</button>
+        <button id="changeUrlBtn" onclick="changeScriptUrl()" style="display:none;background:#0D1A2A;border:1px solid #60A5FA;color:#60A5FA;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">🔗 Change URL</button>
       </div>
       <div id="adminResultsDiv"></div>
     </div>
@@ -222,6 +223,40 @@ input:focus{border-color:#00D563}
       <div id="adminUsersDiv"></div>
     </div>
     <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- SETUP MODAL — shown on first open if no Script URL saved -->
+<div id="setupModal" style="display:none;position:fixed;inset:0;background:#0A0E1A;z-index:999;overflow-y:auto">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:400px;width:100%">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="font-size:48px;margin-bottom:6px">☁️</div>
+      <div style="color:#60A5FA;font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:4px">ONE-TIME SETUP</div>
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:6px">Connect Google Sheet</h2>
+      <p style="color:#6B7A99;font-size:12px">Paste your Apps Script URL so all players sync to one Sheet</p>
+    </div>
+    <div class="fcard">
+      <div id="setupMsg" style="display:none;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;text-align:center"></div>
+      <label class="flabel" style="font-size:12px;margin-bottom:6px">APPS SCRIPT WEB APP URL</label>
+      <input type="text" id="setupUrl"
+        placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+        style="font-size:13px;padding:11px;margin-bottom:6px"
+        onkeydown="if(event.key==='Enter')saveSetup()">
+      <p style="color:#4A5568;font-size:11px;margin-bottom:14px">
+        script.google.com → your project → Deploy → Manage deployments → copy Web app URL
+      </p>
+      <button class="btn btn-g" onclick="saveSetup()" id="setupBtn" style="margin-bottom:10px;font-size:15px;padding:14px">
+        ✅ Connect &amp; Test →
+      </button>
+      <button class="btn-s" onclick="skipSetup()" style="text-align:center;padding:9px;font-size:12px">
+        Skip — use this device only
+      </button>
+    </div>
+    <div style="text-align:center;margin-top:14px">
+      <p style="color:#4A5568;font-size:11px">Need help? <a href="https://script.google.com" target="_blank" style="color:#60A5FA">Open script.google.com</a></p>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -267,13 +302,76 @@ input:focus{border-color:#00D563}
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════════════════════
-// ① PASTE YOUR GOOGLE APPS SCRIPT URL BELOW (from Code.gs deployment)
-// ══════════════════════════════════════════════════════════════════════
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4lxs6PLBL_Xn-oiv3zMzlKjAP6Z5XHItzwV9G1EEVYNIVWB9nPZ9YpAnsZvZ1wJfyDw/exec";
-// Example: "https://script.google.com/macros/d/AKfycbx.../exec"
-// If blank, app works locally only (predictions NOT shared across devices)
-// ══════════════════════════════════════════════════════════════════════
+// Google Apps Script deployment URL
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4lxs6PLBL_Xn-oiv3zMzlKjAP6Z5XHItzwV9G1EEVYNIVWB9nPZ9YpAnsZvZ1wJfyDw/exec";
+// Use saved URL if changed, otherwise use the default above
+let SCRIPT_URL = localStorage.getItem("bikeler_script_url") || DEFAULT_SCRIPT_URL;
+
+// ── SETUP SCREEN (first-time URL entry) ──────────────────────────────────
+function initApp() {
+  // URL is pre-configured — only show setup if explicitly cleared
+  const saved = localStorage.getItem("bikeler_script_url");
+  const effective = saved || DEFAULT_SCRIPT_URL;
+  if (!effective || !effective.includes("script.google.com")) {
+    document.getElementById("setupModal").style.display = "block";
+  }
+}
+
+async function saveSetup() {
+  const url = document.getElementById("setupUrl").value.trim();
+  if (!url) { showSetupMsg("Please paste your Apps Script URL", false); return; }
+  if (!url.includes("script.google.com")) {
+    showSetupMsg("URL must be from script.google.com (ends in /exec)", false);
+    return;
+  }
+  const btn = document.getElementById("setupBtn");
+  btn.disabled = true; btn.textContent = "⏳ Testing connection…";
+  showSetupMsg("Testing connection to Google Sheet…", true);
+  try {
+    const r = await fetch(url); 
+    const d = await r.json();
+    if (d && d.status === "ok") {
+      localStorage.setItem("bikeler_script_url", url);
+      SCRIPT_URL = url;
+      document.getElementById("setupModal").style.display = "none";
+      showSetupMsg("", true);
+      alert("✅ Connected! Google Sheet sync is now active.");
+    } else {
+      showSetupMsg("Got a response but status was not OK. Check the URL and try again.", false);
+      btn.disabled = false; btn.textContent = "✅ Connect & Test →";
+    }
+  } catch(e) {
+    showSetupMsg("Could not connect. Make sure the URL is correct and the script is deployed with \'Anyone\' access.", false);
+    btn.disabled = false; btn.textContent = "✅ Connect & Test →";
+  }
+}
+
+function skipSetup() {
+  localStorage.setItem("bikeler_script_url", "");
+  document.getElementById("setupModal").style.display = "none";
+}
+
+function showSetupMsg(msg, ok) {
+  const el = document.getElementById("setupMsg");
+  if (!msg) { el.style.display = "none"; return; }
+  el.style.display = "block";
+  el.style.background = ok ? "#0D2E1E" : "#1A0808";
+  el.style.color = ok ? "#00D563" : "#F87171";
+  el.textContent = msg;
+}
+
+function changeScriptUrl() {
+  const url = prompt("Paste your Apps Script URL (ends in /exec):", SCRIPT_URL);
+  if (!url) return;
+  if (!url.includes("script.google.com")) { alert("URL must be from script.google.com"); return; }
+  localStorage.setItem("bikeler_script_url", url);
+  SCRIPT_URL = url;
+  alert("✅ URL saved! Refresh the page to sync.");
+}
+
+// Run on page load
+window.addEventListener("load", initApp);
+
 
 const ADMIN_PW  = "bikeler2026";
 const ADMIN_NAME= "Admin";
@@ -341,7 +439,7 @@ function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).to
 function allMatches(){return Object.values(S).flat();}
 
 // ── SHEET API (with localStorage fallback) ─────────────────────────────────
-const sheetReady = SCRIPT_URL && SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbx4lxs6PLBL_Xn-oiv3zMzlKjAP6Z5XHItzwV9G1EEVYNIVWB9nPZ9YpAnsZvZ1wJfyDw/exec";
+const sheetReady = !!SCRIPT_URL && SCRIPT_URL.includes("script.google.com");
 
 async function sheetCall(action, payload={}) {
   if (!sheetReady) return null;
@@ -839,7 +937,11 @@ function renderAdmin(){
   // Sheet status
   document.getElementById("sheetStatus").textContent = sheetReady
     ? "✅ Connected — all predictions from all devices synced here"
-    : "⚠️  No Sheet URL set — showing local device data only (add SCRIPT_URL in HTML to enable cross-device sync)";
+    : "⚠️  Connection failed — click 🔗 Change URL to update the Apps Script URL";
+
+  // Show change URL button always in admin
+  const changeBtn = document.getElementById("changeUrlBtn");
+  if(changeBtn) changeBtn.style.display = "inline-block";
 
   document.getElementById("aStrip").innerHTML=stripHTML(aDate,"setADate");
   document.getElementById("adminPredsStrip").innerHTML=stripHTML(adminPredsDate,"setAdminPredsDate");
