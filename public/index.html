@@ -7,850 +7,925 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0A0E1A;color:#fff;min-height:100vh}
-.wrap{max-width:620px;margin:0 auto;padding:0 14px}
-
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
 .tabs{display:flex;background:#0D1525;border-bottom:1px solid #1F2D42;position:sticky;top:0;z-index:99}
-.tab{flex:1;padding:13px 4px;border:none;background:transparent;color:#4A5568;font-size:13px;font-weight:400;border-bottom:2px solid transparent;cursor:pointer}
+.tab{flex:1;padding:11px 3px;border:none;background:transparent;color:#4A5568;font-size:11px;font-weight:400;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
 .tab.on{color:#fff;font-weight:700;border-bottom-color:#00D563}
-
 .dstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
 .dstrip::-webkit-scrollbar{display:none}
-.dbtn{flex-shrink:0;padding:6px 9px;border-radius:8px;min-width:42px;text-align:center;border:1.5px solid #1F2D42;background:transparent;cursor:pointer;color:#8A9BBB}
-.dbtn.on{border-color:#00D563;background:#0D2E1E}
-.dbtn .dd{font-size:15px;font-weight:700}
-.dbtn .dw{font-size:9px;font-weight:600;color:#4A5568}
-.dbtn.on .dd,.dbtn.on .dw{color:#00D563}
-
-.mcard{background:#111827;border:1.5px solid #1F2D42;border-radius:14px;padding:13px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
-.mcard:hover{border-color:#00D563}
-.mcard.locked{opacity:.7;cursor:not-allowed}
+.dbtn{flex-shrink:0;padding:5px 8px;border-radius:8px;min-width:42px;text-align:center;border:1.5px solid #1F2D42;background:transparent;cursor:pointer;color:#8A9BBB}
+.dbtn.on{border-color:#00D563;background:#0D2E1E;color:#00D563}
+.dbtn .dd{font-size:14px;font-weight:700}
+.dbtn .dw{font-size:8px;font-weight:600;opacity:.7}
+.dbtn .dtag{font-size:7px;font-weight:700}
+.mcard{background:#111827;border:1.5px solid #1F2D42;border-radius:14px;padding:12px 15px;margin-bottom:9px;cursor:pointer;transition:border-color .2s}
+.mcard:hover:not(.locked){border-color:#00D563}
+.mcard.locked{opacity:.65;cursor:not-allowed}
 .mcard.done{border-color:#1A3A2A}
-.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;font-size:11px}
-.grp{background:#1A2A3A;color:#6B7A99;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.gbadge{background:#1A2A3A;color:#6B7A99;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px}
 .mteams{display:flex;align-items:center;justify-content:space-between}
-.tside{display:flex;align-items:center;gap:7px;flex:1}
+.tside{display:flex;align-items:center;gap:6px;flex:1}
 .tside.right{justify-content:flex-end}
-.tflag{font-size:22px}
-.tname{font-weight:700;font-size:14px}
-.mvs{color:#4A5568;font-weight:800;font-size:11px;padding:0 10px}
-
-.fcard{background:#111827;border:1.5px solid #1F2D42;border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.tflag{font-size:20px}
+.tname{font-weight:700;font-size:13px}
+.fcard{background:#111827;border:1.5px solid #1F2D42;border-radius:14px;padding:13px 15px;margin-bottom:9px}
 .fcard.answered{border-color:#1A3A2A}
-.flabel{color:#8A9BBB;font-size:12px;font-weight:600;letter-spacing:.5px;display:block;margin-bottom:8px}
-.flabel-q{color:#fff;font-size:13px;font-weight:600;display:flex;justify-content:space-between;margin-bottom:10px}
-.pts-badge{background:#1A2A3A;color:#4A5568;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
-.pts-badge.on{background:#0D2E1E;color:#00D563}
-.opts{display:flex;flex-wrap:wrap;gap:6px}
-.optbtn{padding:6px 12px;border-radius:8px;border:1.5px solid #1F2D42;background:transparent;color:#8A9BBB;font-size:13px;cursor:pointer;transition:all .15s}
+.fcard.conditional{border-color:#1F3A52;background:#0D1525}
+.fcard.conditional.answered{border-color:#1A3A4A}
+.flabel{color:#8A9BBB;font-size:11px;font-weight:600;display:block;margin-bottom:7px}
+.flabel-q{color:#fff;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;gap:6px}
+.pts-b{background:#1A2A3A;color:#4A5568;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.pts-b.on{background:#0D2E1E;color:#00D563}
+.opts{display:flex;flex-wrap:wrap;gap:5px}
+.optbtn{padding:6px 11px;border-radius:8px;border:1.5px solid #1F2D42;background:transparent;color:#8A9BBB;font-size:12px;cursor:pointer;transition:all .15s}
 .optbtn.on{border-color:#00D563;background:#0D2E1E;color:#00D563;font-weight:700}
-
-.btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
 .btn-g{background:#00D563;color:#0A0E1A}
 .btn-g:disabled{background:#1F2D42;color:#4A5568;cursor:not-allowed}
-.btn-s{background:transparent;border:1px solid #1F2D42;color:#8A9BBB;border-radius:10px;padding:8px 16px;font-size:13px;cursor:pointer}
-.btn-danger{background:#1A0808;border:1px solid #3A1A1A;color:#F87171}
-.btn-danger:hover{background:#2A0A0A}
-
-input[type=text],input[type=number],input[type=password]{background:#0A0E1A;border:1.5px solid #1F2D42;border-radius:8px;padding:12px 14px;color:#fff;font-size:16px;outline:none;width:100%;box-sizing:border-box}
-input[type=text]:focus,input[type=number]:focus,input[type=password]:focus{border-color:#00D563}
-
-.pbar{height:3px;background:#1F2D42;border-radius:3px;overflow:hidden;margin-bottom:14px}
+.btn-s{background:transparent;border:1px solid #1F2D42;color:#8A9BBB;border-radius:10px;padding:9px 16px;font-size:13px;cursor:pointer;width:100%}
+input[type=text],input[type=number],input[type=password]{background:#0A0E1A;border:1.5px solid #1F2D42;border-radius:8px;padding:11px 13px;color:#fff;font-size:16px;outline:none;width:100%;box-sizing:border-box}
+input:focus{border-color:#00D563}
+.pbar{height:3px;background:#1F2D42;border-radius:3px;overflow:hidden;margin-bottom:12px}
 .pfill{height:100%;background:#00D563;border-radius:3px;transition:width .3s}
-
-.notice{background:#0D1A0D;border:1px solid #1A3A1A;border-radius:10px;padding:10px 14px;font-size:12px;color:#4A9A64;margin-bottom:12px;text-align:center}
-.empty{background:#111827;border:1px solid #1F2D42;border-radius:14px;padding:40px;text-align:center;color:#6B7A99}
-
-.hdr{text-align:center;padding:16px 0 12px}
-.hdr-eyebrow{color:#00D563;font-size:11px;font-weight:700;letter-spacing:1.5px}
-.hdr h1{font-size:21px;font-weight:800;margin:4px 0 2px}
-.hdr p{color:#6B7A99;font-size:12px}
-
-.stickybar{position:sticky;top:43px;background:#0A0E1A;z-index:10;padding-top:10px;padding-bottom:8px}
-
-.lbcard{background:#111827;border:1.5px solid #1F2D42;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.lbcard{background:#111827;border:1.5px solid #1F2D42;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:11px;margin-bottom:8px}
 .lbcard.gold{border-color:#F59E0B;background:linear-gradient(135deg,#1A2E1A,#0D1A0D)}
-.lbrank{font-size:22px;min-width:30px;text-align:center}
-.lbname{flex:1}
-.lbname-main{font-weight:700;font-size:15px}
-.lbcard.gold .lbname-main{color:#F59E0B}
-.lbname-sub{color:#4A5568;font-size:11px;margin-top:2px}
-.lbpts{text-align:right}
-.lbpts-main{font-weight:900;font-size:22px;color:#00D563}
-.lbcard.gold .lbpts-main{color:#F59E0B}
-.lbpts-sub{color:#4A5568;font-size:10px}
-
-.pred-card{background:#111827;border:1px solid #1F2D42;border-radius:10px;padding:12px;margin-bottom:8px}
-.pred-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.pred-name{color:#00D563;font-weight:700}
-.pred-score{background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
-.pred-time{color:#4A5568;font-size:10px}
-.pred-del{color:#F87171;cursor:pointer;font-size:12px;text-decoration:underline}
-
 .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#0A0E1A;overflow-y:auto;z-index:200}
 .modal.on{display:block}
+.sticky{position:sticky;top:43px;background:#0A0E1A;z-index:10;padding-top:10px;padding-bottom:8px}
+.pill{background:#0A0E1A;border:1px solid #1F2D42;border-radius:4px;padding:2px 6px;font-size:10px;display:inline-block;margin:2px 2px 2px 0}
+.pill.ok{border-color:#1A3A2A;background:#0D2E1E;color:#00D563}
+.pill.bad{border-color:#3A1A1A;background:#1A0808;color:#F87171}
+.pill-k{color:#4A5568}
+.userbar{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:#0D1525;border-bottom:1px solid #1F2D42;font-size:12px}
+.hdr{text-align:center;padding:13px 0 10px}
+.empty{background:#111827;border:1px solid #1F2D42;border-radius:14px;padding:30px;text-align:center;color:#6B7A99}
+.badge-ft{background:#0D2E1E;color:#00D563;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px}
+.badge-live{background:#3A1A0A;color:#F59E0B;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px}
+.badge-ns{background:#1A2A3A;color:#6B7A99;font-size:9px;padding:2px 7px;border-radius:20px}
+.pw-box{background:#0A0E1A;border:2px solid #00D563;border-radius:10px;padding:12px;text-align:center;margin:12px 0}
+.ctag{color:#60A5FA;font-size:9px;font-weight:700;background:#0D1A2A;border:1px solid #1F3A52;padding:1px 6px;border-radius:10px;margin-right:5px}
+/* Results tab */
+.res-match{background:#111827;border:1.5px solid #1A3A2A;border-radius:16px;overflow:hidden;margin-bottom:16px}
+.res-head{background:#0D1525;border-bottom:1px solid #1F2D42;padding:12px 16px}
+.res-score{text-align:center;padding:8px 0}
+.res-num{font-size:30px;font-weight:900;color:#00D563}
+.player-row{padding:10px 16px;border-bottom:1px solid #1F2D42}
+.player-row:last-child{border-bottom:none}
+.player-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.player-name{color:#00D563;font-weight:700;font-size:14px}
+.player-pts{font-weight:900;font-size:16px;padding:3px 10px;border-radius:16px}
+.pts-hi{background:#0D2E1E;color:#00D563}
+.pts-mid{background:#1A2A0A;color:#BFDB38}
+.pts-lo{background:#1A0808;color:#F87171}
+.ans-grid{display:flex;flex-wrap:wrap;gap:4px}
+.ans-item{font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #1F2D42;background:#0A0E1A}
+.ans-ok{border-color:#1A3A2A;background:#0D2E1E;color:#00D563}
+.ans-bad{border-color:#3A1A1A;background:#1A0808;color:#F87171}
+.ans-k{color:#4A5568}
 </style>
 </head>
 <body>
 
-<div class="tabs">
-  <button class="tab on" onclick="showTab('predict',this)">⚽ Predict</button>
-  <button class="tab" onclick="showTab('results',this)">📋 Results</button>
-  <button class="tab" onclick="showTab('leaderboard',this)">🏅 Board</button>
-  <button class="tab" onclick="showTab('admin',this)">🔧 Admin</button>
-</div>
-
-<!-- PREDICT TAB -->
-<div id="t-predict" class="wrap" style="padding-top:14px">
-  <div class="hdr">
-    <div class="hdr-eyebrow">BIKELER ADDA</div>
-    <h1>FIFA World Cup <span style="color:#00D563">2026</span></h1>
-    <p>Group Stage · Pick a match to predict</p>
-  </div>
-  <div class="dstrip" id="pStrip"></div>
-  <div id="pMatches"></div>
-  <div style="height:20px"></div>
-</div>
-
-<!-- RESULTS TAB -->
-<div id="t-results" class="wrap" style="padding-top:14px;display:none">
-  <div class="hdr">
-    <h2 style="font-size:20px;font-weight:800">📊 Live Cumulative Scores</h2>
-    <p>All matches · Updated in real-time</p>
-  </div>
-  <div id="lbContent"></div>
-  <div style="height:20px"></div>
-</div>
-
-<!-- LEADERBOARD TAB -->
-<div id="t-leaderboard" class="wrap" style="padding-top:14px;display:none">
-  <div class="hdr">
-    <div class="hdr-eyebrow">BIKELER ADDA</div>
-    <h1>🏅 Leaderboard</h1>
-    <p>FIFA World Cup 2026</p>
-  </div>
-  <div id="lbContent2"></div>
-  <div style="height:20px"></div>
-</div>
-
-<!-- ADMIN TAB -->
-<div id="t-admin" class="wrap" style="padding-top:14px;display:none">
-  <div class="hdr">
-    <h2 style="font-size:20px;font-weight:800">🔧 Admin Panel</h2>
-  </div>
-  
-  <div id="adminLock">
+<!-- LOGIN -->
+<div id="loginScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:370px;width:100%">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="font-size:48px;margin-bottom:6px">⚽</div>
+      <div style="color:#00D563;font-size:11px;font-weight:700;letter-spacing:1.5px">BIKELER ADDA</div>
+      <h1 style="font-size:21px;font-weight:800;margin:4px 0 2px">FIFA World Cup <span style="color:#00D563">2026</span></h1>
+      <p style="color:#6B7A99;font-size:12px">Round of 32 · Predictions</p>
+    </div>
     <div class="fcard">
-      <label class="flabel">ADMIN PIN</label>
-      <input type="password" id="adminPin" placeholder="Enter PIN" style="margin-bottom:12px">
-      <button class="btn btn-g" onclick="checkPin()">Unlock</button>
-    </div>
-  </div>
-
-  <div id="adminPanel" style="display:none">
-    <div class="notice">✅ Admin unlocked</div>
-    
-    <!-- AUTO-FETCH RESULTS -->
-    <div style="background:#0D1A2A;border:1.5px solid #1F3A52;border-radius:14px;padding:16px;margin-bottom:16px">
-      <h3 style="color:#60A5FA;font-size:13px;font-weight:700;margin-bottom:12px">🔄 Auto-Fetch Match Results</h3>
-      <div class="dstrip" id="aStrip"></div>
-      <div id="aMatches"></div>
-    </div>
-
-    <!-- DUPLICATE MANAGEMENT -->
-    <div style="background:#1A0A0A;border:1.5px solid #3A1A1A;border-radius:14px;padding:16px">
-      <h3 style="color:#F87171;font-size:13px;font-weight:700;margin-bottom:12px">🗑️ Manage Duplicates</h3>
-      <div id="dupeContent"></div>
-    </div>
-  </div>
-  <div style="height:20px"></div>
-</div>
-
-<!-- NAME SCREEN -->
-<div id="nameView" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#0A0E1A;overflow-y:auto;z-index:200">
-  <div class="wrap" style="padding:14px">
-    <button onclick="closeForm()" style="background:transparent;border:none;color:#6B7A99;font-size:20px;cursor:pointer;margin-bottom:14px;display:block">← Back</button>
-    <div style="background:#111827;border:1.5px solid #1F2D42;border-radius:16px;padding:18px;text-align:center;margin-bottom:18px">
-      <div id="nMatchInfo" style="color:#6B7A99;font-size:11px;margin-bottom:12px"></div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:20px">
-        <div style="text-align:center">
-          <div id="nFlag1" style="font-size:36px"></div>
-          <div id="nTeam1" style="color:#fff;font-weight:700;font-size:13px;margin-top:5px"></div>
+      <div id="loginMsg" style="display:none;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;text-align:center"></div>
+      <div id="stepName">
+        <label class="flabel" style="font-size:13px;margin-bottom:8px">YOUR NAME</label>
+        <input type="text" id="loginName" placeholder="e.g. Ramesh" style="font-size:18px;padding:13px;margin-bottom:14px" onkeydown="if(event.key==='Enter')checkName()">
+        <button class="btn btn-g" onclick="checkName()" style="font-size:15px;padding:14px">Continue →</button>
+        <div style="text-align:center;margin-top:10px"><button onclick="showAdminLogin()" style="background:none;border:none;color:#4A5568;font-size:11px;cursor:pointer">Admin login</button></div>
+      </div>
+      <div id="stepNew" style="display:none">
+        <div style="color:#6B7A99;font-size:12px;margin-bottom:10px">Welcome <strong id="newName" style="color:#fff"></strong>! Auto-generated password — <strong style="color:#F59E0B">save it to log back in.</strong></div>
+        <div class="pw-box">
+          <div style="color:#6B7A99;font-size:10px;font-weight:600;letter-spacing:1px;margin-bottom:4px">YOUR PASSWORD</div>
+          <div id="genPw" style="color:#00D563;font-size:28px;font-weight:900;letter-spacing:4px"></div>
+          <button onclick="copyPw()" style="background:#1A3A2A;border:1px solid #00D563;color:#00D563;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;margin-top:6px">📋 Copy</button>
         </div>
-        <div style="color:#4A5568;font-weight:800;font-size:18px">VS</div>
-        <div style="text-align:center">
-          <div id="nFlag2" style="font-size:36px"></div>
-          <div id="nTeam2" style="color:#fff;font-weight:700;font-size:13px;margin-top:5px"></div>
-        </div>
+        <div style="color:#4A5568;font-size:11px;margin-bottom:12px;text-align:center">Screenshot before continuing!</div>
+        <button class="btn btn-g" onclick="registerUser()" style="margin-bottom:8px">I've saved it — Enter App →</button>
+        <button class="btn-s" onclick="backToName()" style="text-align:center;padding:9px;margin-top:2px">← Change name</button>
+      </div>
+      <div id="stepReturn" style="display:none">
+        <div style="color:#6B7A99;font-size:12px;margin-bottom:10px">Welcome back, <strong id="retName" style="color:#fff"></strong>!</div>
+        <input type="password" id="loginPw" placeholder="Your password" style="margin-bottom:12px;letter-spacing:3px;font-size:18px" onkeydown="if(event.key==='Enter')loginUser()">
+        <button class="btn btn-g" onclick="loginUser()" style="margin-bottom:8px">Sign In →</button>
+        <button class="btn-s" onclick="backToName()" style="text-align:center;padding:9px;margin-top:2px">← Back</button>
+        <div style="text-align:center;margin-top:10px"><button onclick="forgotPw()" style="background:none;border:none;color:#4A5568;font-size:11px;cursor:pointer">Forgot password? Ask admin.</button></div>
+      </div>
+      <div id="stepAdmin" style="display:none">
+        <div style="color:#F59E0B;font-size:12px;margin-bottom:10px;font-weight:600">🔧 Admin Login</div>
+        <input type="password" id="adminPwInput" placeholder="Admin password" style="margin-bottom:12px;letter-spacing:3px;font-size:18px" onkeydown="if(event.key==='Enter')loginAdmin()">
+        <button class="btn btn-g" onclick="loginAdmin()" style="margin-bottom:8px">Sign In</button>
+        <button class="btn-s" onclick="backToName()" style="text-align:center;padding:9px;margin-top:2px">← Back</button>
       </div>
     </div>
-    <div style="background:#111827;border:1.5px solid #1F2D42;border-radius:16px;padding:20px">
-      <label class="flabel" style="font-size:13px;margin-bottom:10px">👤 ENTER YOUR NAME</label>
-      <input type="text" id="pName" placeholder="e.g. Ramesh, Suresh…" style="font-size:18px;padding:14px;margin-bottom:16px" onkeydown="if(event.key==='Enter') startQuestions()">
-      <button class="btn btn-g" onclick="startQuestions()" style="font-size:16px;padding:15px">Start Predicting →</button>
-    </div>
-    <div style="height:30px"></div>
   </div>
 </div>
 
-<!-- QUESTIONS SCREEN -->
-<div id="questionsView" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#0A0E1A;overflow-y:auto;z-index:200">
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+  <div class="userbar">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="color:#4A5568">👤</span>
+      <span id="curName" style="color:#8A9BBB;font-size:12px;font-weight:600"></span>
+      <span id="adminBadge" style="display:none;background:#F59E0B;color:#0A0E1A;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px">ADMIN</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="fetchingIndicator" style="display:none;color:#60A5FA;font-size:10px">🔄 Fetching results…</span>
+      <button onclick="logout()" style="background:none;border:none;color:#4A5568;font-size:11px;cursor:pointer">Sign out</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('predict',this)">⚽ Predict</button>
+    <button class="tab" onclick="showTab('myBets',this)">📋 My Bets</button>
+    <button class="tab" onclick="showTab('results',this)">📊 Results</button>
+    <button class="tab" onclick="showTab('leaderboard',this)">🏅 Board</button>
+    <button class="tab" id="adminTabBtn" style="display:none" onclick="showTab('admin',this)">🔧 Admin</button>
+  </div>
+
+  <div id="t-predict" class="wrap" style="padding-top:12px">
+    <div class="hdr">
+      <div style="color:#00D563;font-size:10px;font-weight:700;letter-spacing:1.5px">ROUND OF 32</div>
+      <h1 style="font-size:20px;font-weight:800;margin:3px 0 2px">FIFA World Cup <span style="color:#00D563">2026</span></h1>
+      <p style="color:#6B7A99;font-size:11px">Jun 28 – Jul 3 · Knockout Stage</p>
+    </div>
+    <div class="dstrip" id="pStrip"></div>
+    <div id="pMatches"></div>
+    <div style="height:20px"></div>
+  </div>
+
+  <div id="t-myBets" class="wrap" style="padding-top:12px;display:none">
+    <div class="hdr">
+      <h2 style="font-size:20px;font-weight:800">📋 My Predictions</h2>
+      <p style="color:#6B7A99;font-size:11px">Only you can see these</p>
+    </div>
+    <div id="myBetsContent"></div>
+    <div style="height:20px"></div>
+  </div>
+
+  <!-- RESULTS TAB — public after match is over + result exists -->
+  <div id="t-results" class="wrap" style="padding-top:12px;display:none">
+    <div class="hdr">
+      <h2 style="font-size:20px;font-weight:800">📊 Match Results</h2>
+      <p style="color:#6B7A99;font-size:11px">Full transparency · Visible after match + scores evaluated</p>
+    </div>
+    <div class="dstrip" id="rStrip"></div>
+    <div id="rContent"></div>
+    <div style="height:20px"></div>
+  </div>
+
+  <div id="t-leaderboard" class="wrap" style="padding-top:12px;display:none">
+    <div class="hdr">
+      <div style="color:#00D563;font-size:10px;font-weight:700;letter-spacing:1.5px">BIKELER ADDA</div>
+      <h1 style="font-size:20px;font-weight:800;margin:3px 0 2px">🏅 Leaderboard</h1>
+      <p style="color:#6B7A99;font-size:11px">Cumulative scores · All matches</p>
+    </div>
+    <div id="lbContent"></div>
+    <div style="height:20px"></div>
+  </div>
+
+  <div id="t-admin" class="wrap" style="padding-top:12px;display:none">
+    <div class="hdr"><h2 style="font-size:20px;font-weight:800">🔧 Admin Panel</h2></div>
+    <div class="dstrip" id="aStrip"></div>
+    <div style="background:#0D1A2A;border:1.5px solid #1F3A52;border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="color:#60A5FA;font-size:12px;font-weight:700;margin-bottom:4px">🔄 Match Results (Auto-fetched)</div>
+      <div style="color:#4A5568;font-size:10px;margin-bottom:10px">Results auto-fetch when match ends. Manual trigger available below.</div>
+      <div id="adminResultsDiv"></div>
+    </div>
+    <div style="background:#1A0A0A;border:1.5px solid #3A1A1A;border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="color:#F87171;font-size:12px;font-weight:700;margin-bottom:4px">👥 All Players · Answers & Scores</div>
+      <div style="color:#4A5568;font-size:10px;margin-bottom:10px">Admin only — detailed view of everyone's predictions</div>
+      <div class="dstrip" id="adminPredsStrip"></div>
+      <div id="adminAllPredsDiv"></div>
+    </div>
+    <div style="background:#0A0A1A;border:1.5px solid #1F1F42;border-radius:14px;padding:14px">
+      <div style="color:#A78BFA;font-size:12px;font-weight:700;margin-bottom:10px">🗑️ Manage Users</div>
+      <div id="adminUsersDiv"></div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- NAME MODAL -->
+<div id="nameView" class="modal">
+  <div class="wrap" style="padding:14px">
+    <button onclick="closeForm()" style="background:transparent;border:none;color:#6B7A99;font-size:20px;cursor:pointer;margin-bottom:14px;display:block">← Back</button>
+    <div class="fcard" style="text-align:center;margin-bottom:14px">
+      <div id="nMatchInfo" style="color:#6B7A99;font-size:10px;margin-bottom:10px"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:18px">
+        <div><div id="nFlag1" style="font-size:32px"></div><div id="nTeam1" style="color:#fff;font-weight:700;font-size:12px;margin-top:4px"></div></div>
+        <div style="color:#4A5568;font-weight:800;font-size:14px">VS</div>
+        <div><div id="nFlag2" style="font-size:32px"></div><div id="nTeam2" style="color:#fff;font-weight:700;font-size:12px;margin-top:4px"></div></div>
+      </div>
+    </div>
+    <div class="fcard">
+      <label class="flabel" style="font-size:12px;margin-bottom:8px">PREDICTING AS</label>
+      <div style="background:#0D2E1E;border:1.5px solid #00D563;border-radius:8px;padding:12px;color:#00D563;font-size:16px;font-weight:700;margin-bottom:14px" id="confirmName"></div>
+      <button class="btn btn-g" onclick="startQuestions()" style="font-size:15px;padding:14px">Start Predicting →</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUESTIONS MODAL -->
+<div id="questionsView" class="modal">
   <div class="wrap" style="padding:0 14px">
-    <div class="stickybar">
+    <div class="sticky">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
-        <button onclick="backToName()" style="background:transparent;border:none;color:#6B7A99;font-size:20px;cursor:pointer">←</button>
+        <button onclick="backToConfirm()" style="background:transparent;border:none;color:#6B7A99;font-size:20px;cursor:pointer">←</button>
         <div style="flex:1;text-align:center">
-          <div id="fTitle" style="font-weight:800;font-size:14px"></div>
-          <div id="fSub" style="color:#6B7A99;font-size:11px;margin-top:2px"></div>
+          <div id="fTitle" style="font-weight:800;font-size:13px"></div>
+          <div id="fSub" style="color:#6B7A99;font-size:10px;margin-top:2px"></div>
         </div>
-        <div id="fCount" style="color:#00D563;font-size:13px;font-weight:700;min-width:32px;text-align:right">0/10</div>
+        <div id="fCount" style="color:#00D563;font-size:12px;font-weight:700;min-width:34px;text-align:right">0/11</div>
       </div>
       <div class="pbar"><div class="pfill" id="pFill" style="width:0%"></div></div>
     </div>
     <div id="questions"></div>
-    <div style="position:sticky;bottom:0;background:#0A0E1A;padding:12px 0 20px">
-      <button class="btn btn-g" id="submitBtn" onclick="submitPred()" disabled style="font-size:16px;padding:16px;border-radius:12px">
-        Answer all 10 questions
-      </button>
+    <div style="position:sticky;bottom:0;background:#0A0E1A;padding:10px 0 20px">
+      <button class="btn btn-g" id="submitBtn" onclick="submitPred()" disabled style="font-size:15px;padding:15px;border-radius:12px">Answer all questions</button>
     </div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════
-// SCHEDULE
-// ═══════════════════════════════════════════════════════════════════
-const S = {
- "2026-06-11":[
-  {t1:"Mexico",t2:"South Africa",time:"3:00 PM",ko:"2026-06-11T19:00:00Z",venue:"Mexico City",g:"A"},
-  {t1:"South Korea",t2:"Czechia",time:"10:00 PM",ko:"2026-06-12T02:00:00Z",venue:"Guadalajara",g:"A"},
+const ADMIN_PW="bikeler2026";
+const ADMIN_NAME="Admin";
+
+// ═══════════════════════════════════
+// SCHEDULE — All 16 confirmed R32 matches
+// ═══════════════════════════════════
+const S={
+ "2026-06-28":[
+  {id:"m73",t1:"South Africa",t2:"Canada",       time:"3:00 PM",ko:"2026-06-28T19:00:00Z",venue:"SoFi Stadium, LA"},
  ],
- "2026-06-12":[
-  {t1:"Canada",t2:"Bosnia & Herz.",time:"3:00 PM",ko:"2026-06-12T19:00:00Z",venue:"Toronto",g:"B"},
-  {t1:"USA",t2:"Paraguay",time:"9:00 PM",ko:"2026-06-13T01:00:00Z",venue:"Los Angeles",g:"D"},
+ "2026-06-29":[
+  {id:"m76",t1:"Brazil",       t2:"Japan",         time:"1:00 PM",ko:"2026-06-29T17:00:00Z",venue:"NRG Stadium, Houston"},
+  {id:"m74",t1:"Germany",      t2:"Paraguay",       time:"4:30 PM",ko:"2026-06-29T20:30:00Z",venue:"Gillette Stadium, Boston"},
+  {id:"m75",t1:"Netherlands",  t2:"Morocco",        time:"9:00 PM",ko:"2026-06-30T01:00:00Z",venue:"Estadio BBVA, Monterrey"},
  ],
- "2026-06-13":[
-  {t1:"Qatar",t2:"Switzerland",time:"3:00 PM",ko:"2026-06-13T19:00:00Z",venue:"San Francisco",g:"B"},
-  {t1:"Brazil",t2:"Morocco",time:"6:00 PM",ko:"2026-06-13T22:00:00Z",venue:"New York/NJ",g:"C"},
-  {t1:"Haiti",t2:"Scotland",time:"9:00 PM",ko:"2026-06-14T01:00:00Z",venue:"Boston",g:"C"},
+ "2026-06-30":[
+  {id:"m78",t1:"Ivory Coast",  t2:"Norway",         time:"1:00 PM",ko:"2026-06-30T17:00:00Z",venue:"AT&T Stadium, Dallas"},
+  {id:"m77",t1:"France",       t2:"Sweden",          time:"5:00 PM",ko:"2026-06-30T21:00:00Z",venue:"MetLife Stadium, NJ"},
+  {id:"m79",t1:"Mexico",       t2:"Ecuador",         time:"9:00 PM",ko:"2026-07-01T01:00:00Z",venue:"Estadio Azteca, Mexico City"},
  ],
- "2026-06-14":[
-  {t1:"Australia",t2:"Türkiye",time:"12:00 AM",ko:"2026-06-14T04:00:00Z",venue:"Vancouver",g:"D"},
-  {t1:"Germany",t2:"Curaçao",time:"1:00 PM",ko:"2026-06-14T17:00:00Z",venue:"Houston",g:"E"},
-  {t1:"Netherlands",t2:"Japan",time:"4:00 PM",ko:"2026-06-14T20:00:00Z",venue:"Dallas",g:"F"},
-  {t1:"Ivory Coast",t2:"Ecuador",time:"7:00 PM",ko:"2026-06-14T23:00:00Z",venue:"Philadelphia",g:"E"},
-  {t1:"Sweden",t2:"Tunisia",time:"10:00 PM",ko:"2026-06-15T02:00:00Z",venue:"Monterrey",g:"F"},
+ "2026-07-01":[
+  {id:"m80",t1:"England",      t2:"DR Congo",        time:"12:00 PM",ko:"2026-07-01T16:00:00Z",venue:"Mercedes-Benz, Atlanta"},
+  {id:"m82",t1:"Belgium",      t2:"Senegal",         time:"4:00 PM",ko:"2026-07-01T20:00:00Z",venue:"Lumen Field, Seattle"},
+  {id:"m81",t1:"USA",          t2:"Bosnia & Herz.", time:"8:00 PM",ko:"2026-07-02T00:00:00Z",venue:"Levi's Stadium, Santa Clara"},
  ],
- "2026-06-15":[
-  {t1:"Spain",t2:"Cabo Verde",time:"12:00 PM",ko:"2026-06-15T16:00:00Z",venue:"Atlanta",g:"H"},
-  {t1:"Belgium",t2:"Egypt",time:"3:00 PM",ko:"2026-06-15T19:00:00Z",venue:"Seattle",g:"G"},
-  {t1:"Saudi Arabia",t2:"Uruguay",time:"6:00 PM",ko:"2026-06-15T22:00:00Z",venue:"Miami",g:"H"},
-  {t1:"Iran",t2:"New Zealand",time:"9:00 PM",ko:"2026-06-16T01:00:00Z",venue:"Los Angeles",g:"G"},
+ "2026-07-02":[
+  {id:"m84",t1:"Spain",        t2:"Austria",         time:"3:00 PM",ko:"2026-07-02T19:00:00Z",venue:"SoFi Stadium, LA"},
+  {id:"m83",t1:"Portugal",     t2:"Croatia",         time:"7:00 PM",ko:"2026-07-02T23:00:00Z",venue:"BMO Field, Toronto"},
+  {id:"m85",t1:"Switzerland",  t2:"Algeria",         time:"11:00 PM",ko:"2026-07-03T03:00:00Z",venue:"BC Place, Vancouver"},
  ],
- "2026-06-16":[
-  {t1:"France",t2:"Senegal",time:"3:00 PM",ko:"2026-06-16T19:00:00Z",venue:"New York/NJ",g:"I"},
-  {t1:"Iraq",t2:"Norway",time:"6:00 PM",ko:"2026-06-16T22:00:00Z",venue:"Boston",g:"I"},
-  {t1:"Argentina",t2:"Algeria",time:"9:00 PM",ko:"2026-06-17T01:00:00Z",venue:"Kansas City",g:"J"},
- ],
- "2026-06-17":[
-  {t1:"Austria",t2:"Jordan",time:"12:00 AM",ko:"2026-06-17T04:00:00Z",venue:"San Francisco",g:"J"},
-  {t1:"Portugal",t2:"DR Congo",time:"1:00 PM",ko:"2026-06-17T17:00:00Z",venue:"Houston",g:"K"},
-  {t1:"England",t2:"Croatia",time:"4:00 PM",ko:"2026-06-17T20:00:00Z",venue:"Dallas",g:"L"},
-  {t1:"Ghana",t2:"Panama",time:"7:00 PM",ko:"2026-06-17T23:00:00Z",venue:"Toronto",g:"L"},
-  {t1:"Uzbekistan",t2:"Colombia",time:"10:00 PM",ko:"2026-06-18T02:00:00Z",venue:"Mexico City",g:"K"},
- ],
- "2026-06-18":[
-  {t1:"Czechia",t2:"South Africa",time:"12:00 PM",ko:"2026-06-18T16:00:00Z",venue:"Atlanta",g:"A"},
-  {t1:"Switzerland",t2:"Bosnia & Herz.",time:"3:00 PM",ko:"2026-06-18T19:00:00Z",venue:"Los Angeles",g:"B"},
-  {t1:"Canada",t2:"Qatar",time:"6:00 PM",ko:"2026-06-18T22:00:00Z",venue:"Vancouver",g:"B"},
-  {t1:"Mexico",t2:"South Korea",time:"9:00 PM",ko:"2026-06-19T01:00:00Z",venue:"Guadalajara",g:"A"},
- ],
- "2026-06-19":[
-  {t1:"Türkiye",t2:"Paraguay",time:"12:00 AM",ko:"2026-06-19T04:00:00Z",venue:"San Francisco",g:"D"},
-  {t1:"USA",t2:"Australia",time:"3:00 PM",ko:"2026-06-19T19:00:00Z",venue:"Seattle",g:"D"},
-  {t1:"Scotland",t2:"Morocco",time:"6:00 PM",ko:"2026-06-19T22:00:00Z",venue:"Boston",g:"C"},
-  {t1:"Brazil",t2:"Haiti",time:"8:30 PM",ko:"2026-06-20T00:30:00Z",venue:"Philadelphia",g:"C"},
- ],
- "2026-06-20":[
-  {t1:"Netherlands",t2:"Sweden",time:"1:00 PM",ko:"2026-06-20T17:00:00Z",venue:"Houston",g:"F"},
-  {t1:"Germany",t2:"Ivory Coast",time:"4:00 PM",ko:"2026-06-20T20:00:00Z",venue:"Toronto",g:"E"},
-  {t1:"Ecuador",t2:"Curaçao",time:"8:00 PM",ko:"2026-06-21T00:00:00Z",venue:"Kansas City",g:"E"},
- ],
- "2026-06-21":[
-  {t1:"Tunisia",t2:"Japan",time:"12:00 AM",ko:"2026-06-21T04:00:00Z",venue:"Monterrey",g:"F"},
-  {t1:"Spain",t2:"Saudi Arabia",time:"12:00 PM",ko:"2026-06-21T16:00:00Z",venue:"Atlanta",g:"H"},
-  {t1:"Belgium",t2:"Iran",time:"3:00 PM",ko:"2026-06-21T19:00:00Z",venue:"Los Angeles",g:"G"},
-  {t1:"Uruguay",t2:"Cabo Verde",time:"6:00 PM",ko:"2026-06-21T22:00:00Z",venue:"Miami",g:"H"},
-  {t1:"New Zealand",t2:"Egypt",time:"9:00 PM",ko:"2026-06-22T01:00:00Z",venue:"Vancouver",g:"G"},
- ],
- "2026-06-22":[
-  {t1:"Argentina",t2:"Austria",time:"1:00 PM",ko:"2026-06-22T17:00:00Z",venue:"Dallas",g:"J"},
-  {t1:"France",t2:"Iraq",time:"5:00 PM",ko:"2026-06-22T21:00:00Z",venue:"Philadelphia",g:"I"},
-  {t1:"Norway",t2:"Senegal",time:"8:00 PM",ko:"2026-06-23T00:00:00Z",venue:"New York/NJ",g:"I"},
-  {t1:"Jordan",t2:"Algeria",time:"11:00 PM",ko:"2026-06-23T03:00:00Z",venue:"San Francisco",g:"J"},
- ],
- "2026-06-23":[
-  {t1:"Portugal",t2:"Uzbekistan",time:"1:00 PM",ko:"2026-06-23T17:00:00Z",venue:"Houston",g:"K"},
-  {t1:"England",t2:"Ghana",time:"4:00 PM",ko:"2026-06-23T20:00:00Z",venue:"Boston",g:"L"},
-  {t1:"Panama",t2:"Croatia",time:"7:00 PM",ko:"2026-06-23T23:00:00Z",venue:"Toronto",g:"L"},
-  {t1:"Colombia",t2:"DR Congo",time:"10:00 PM",ko:"2026-06-24T02:00:00Z",venue:"Guadalajara",g:"K"},
- ],
- "2026-06-24":[
-  {t1:"Switzerland",t2:"Canada",time:"3:00 PM",ko:"2026-06-24T19:00:00Z",venue:"Vancouver",g:"B"},
-  {t1:"Bosnia & Herz.",t2:"Qatar",time:"3:00 PM",ko:"2026-06-24T19:00:00Z",venue:"Seattle",g:"B"},
-  {t1:"Scotland",t2:"Brazil",time:"6:00 PM",ko:"2026-06-24T22:00:00Z",venue:"Miami",g:"C"},
-  {t1:"Morocco",t2:"Haiti",time:"6:00 PM",ko:"2026-06-24T22:00:00Z",venue:"Atlanta",g:"C"},
-  {t1:"Czechia",t2:"Mexico",time:"9:00 PM",ko:"2026-06-25T01:00:00Z",venue:"Mexico City",g:"A"},
-  {t1:"South Africa",t2:"South Korea",time:"9:00 PM",ko:"2026-06-25T01:00:00Z",venue:"Monterrey",g:"A"},
- ],
- "2026-06-25":[
-  {t1:"Curaçao",t2:"Ivory Coast",time:"4:00 PM",ko:"2026-06-25T20:00:00Z",venue:"Philadelphia",g:"E"},
-  {t1:"Ecuador",t2:"Germany",time:"4:00 PM",ko:"2026-06-25T20:00:00Z",venue:"New York/NJ",g:"E"},
-  {t1:"Japan",t2:"Sweden",time:"7:00 PM",ko:"2026-06-25T23:00:00Z",venue:"Dallas",g:"F"},
-  {t1:"Tunisia",t2:"Netherlands",time:"7:00 PM",ko:"2026-06-25T23:00:00Z",venue:"Kansas City",g:"F"},
-  {t1:"Türkiye",t2:"USA",time:"10:00 PM",ko:"2026-06-26T02:00:00Z",venue:"Los Angeles",g:"D"},
-  {t1:"Paraguay",t2:"Australia",time:"10:00 PM",ko:"2026-06-26T02:00:00Z",venue:"San Francisco",g:"D"},
- ],
- "2026-06-26":[
-  {t1:"Norway",t2:"France",time:"3:00 PM",ko:"2026-06-26T19:00:00Z",venue:"Boston",g:"I"},
-  {t1:"Senegal",t2:"Iraq",time:"3:00 PM",ko:"2026-06-26T19:00:00Z",venue:"Toronto",g:"I"},
-  {t1:"Cabo Verde",t2:"Saudi Arabia",time:"8:00 PM",ko:"2026-06-27T00:00:00Z",venue:"Houston",g:"H"},
-  {t1:"Uruguay",t2:"Spain",time:"8:00 PM",ko:"2026-06-27T00:00:00Z",venue:"Guadalajara",g:"H"},
-  {t1:"Egypt",t2:"Iran",time:"11:00 PM",ko:"2026-06-27T03:00:00Z",venue:"Seattle",g:"G"},
-  {t1:"New Zealand",t2:"Belgium",time:"11:00 PM",ko:"2026-06-27T03:00:00Z",venue:"Vancouver",g:"G"},
- ],
- "2026-06-27":[
-  {t1:"Panama",t2:"England",time:"5:00 PM",ko:"2026-06-27T21:00:00Z",venue:"New York/NJ",g:"L"},
-  {t1:"Croatia",t2:"Ghana",time:"5:00 PM",ko:"2026-06-27T21:00:00Z",venue:"Philadelphia",g:"L"},
-  {t1:"Colombia",t2:"Portugal",time:"7:30 PM",ko:"2026-06-27T23:30:00Z",venue:"Miami",g:"K"},
-  {t1:"DR Congo",t2:"Uzbekistan",time:"7:30 PM",ko:"2026-06-27T23:30:00Z",venue:"Atlanta",g:"K"},
-  {t1:"Algeria",t2:"Austria",time:"10:00 PM",ko:"2026-06-28T02:00:00Z",venue:"Kansas City",g:"J"},
-  {t1:"Jordan",t2:"Argentina",time:"10:00 PM",ko:"2026-06-28T02:00:00Z",venue:"Dallas",g:"J"},
+ "2026-07-03":[
+  {id:"m88",t1:"Australia",    t2:"Egypt",           time:"2:00 PM",ko:"2026-07-03T18:00:00Z",venue:"AT&T Stadium, Arlington"},
+  {id:"m86",t1:"Argentina",    t2:"Cape Verde",      time:"6:00 PM",ko:"2026-07-03T22:00:00Z",venue:"Hard Rock Stadium, Miami"},
+  {id:"m87",t1:"Colombia",     t2:"Ghana",           time:"9:30 PM",ko:"2026-07-04T01:30:00Z",venue:"Arrowhead Stadium, KC"},
  ],
 };
 
-const FLAGS = {
-  "Mexico":"🇲🇽","South Africa":"🇿🇦","South Korea":"🇰🇷","Czechia":"🇨🇿","Canada":"🇨🇦","Bosnia & Herz.":"🇧🇦",
-  "USA":"🇺🇸","Paraguay":"🇵🇾","Germany":"🇩🇪","Curaçao":"🇨🇼","Argentina":"🇦🇷","Austria":"🇦🇹",
-  "Spain":"🇪🇸","Saudi Arabia":"🇸🇦","Brazil":"🇧🇷","Morocco":"🇲🇦","Haiti":"🇭🇹","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-  "Australia":"🇦🇺","Türkiye":"🇹🇷","Netherlands":"🇳🇱","Japan":"🇯🇵","Ivory Coast":"🇨🇮","Ecuador":"🇪🇨",
-  "Sweden":"🇸🇪","Tunisia":"🇹🇳","Cabo Verde":"🇨🇻","Belgium":"🇧🇪","Egypt":"🇪🇬","Uruguay":"🇺🇾",
-  "Iran":"🇮🇷","New Zealand":"🇳🇿","France":"🇫🇷","Senegal":"🇸🇳","Iraq":"🇮🇶","Norway":"🇳🇴",
-  "Algeria":"🇩🇿","Qatar":"🇶🇦","Switzerland":"🇨🇭","Portugal":"🇵🇹","DR Congo":"🇨🇩","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦","Uzbekistan":"🇺🇿","Colombia":"🇨🇴","Jordan":"🇯🇴",
+const FLAGS={
+  "South Africa":"🇿🇦","Canada":"🇨🇦","Brazil":"🇧🇷","Japan":"🇯🇵","Germany":"🇩🇪","Paraguay":"🇵🇾",
+  "Netherlands":"🇳🇱","Morocco":"🇲🇦","Ivory Coast":"🇨🇮","Norway":"🇳🇴","France":"🇫🇷","Sweden":"🇸🇪",
+  "Mexico":"🇲🇽","Ecuador":"🇪🇨","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","DR Congo":"🇨🇩","Belgium":"🇧🇪","Senegal":"🇸🇳",
+  "USA":"🇺🇸","Bosnia & Herz.":"🇧🇦","Spain":"🇪🇸","Austria":"🇦🇹","Portugal":"🇵🇹","Croatia":"🇭🇷",
+  "Switzerland":"🇨🇭","Algeria":"🇩🇿","Australia":"🇦🇺","Egypt":"🇪🇬","Argentina":"🇦🇷","Cape Verde":"🇨🇻",
+  "Colombia":"🇨🇴","Ghana":"🇬🇭",
 };
-const f = n => FLAGS[n]||"🏳";
+const f=n=>FLAGS[n]||"🏳";
 
-const Qs = [
-  {id:"winner",     label:"Match Winner",          pts:3, opts:(a,b)=>[a,"Draw",b]},
-  {id:"both_score", label:"Both Teams Score?",      pts:2, opts:()=>["Yes","No"]},
-  {id:"total_goals",label:"Total Goals",            pts:3, opts:()=>["0–1","2–3","4–5","6+"]},
-  {id:"first_scorer",label:"First Goal Scorer",     pts:3, opts:(a,b)=>[a,b,"No goals"]},
-  {id:"exact",      label:"Exact Score",            pts:5, type:"score"},
-  {id:"ht_winner",  label:"Half-Time Leader",       pts:2, opts:(a,b)=>[a,"Draw",b]},
-  {id:"yellows",    label:"Total Yellow Cards",     pts:2, opts:()=>["0–1","2–3","4–5","6+"]},
-  {id:"corners",    label:"Total Corners",          pts:2, opts:()=>["0–5","6–9","10–13","14+"]},
-  {id:"penalty",    label:"Penalty Awarded?",       pts:3, opts:()=>["Yes","No"]},
-  {id:"red_card",   label:"Red Card Shown?",        pts:3, opts:()=>["Yes","No"]},
+// ═══════════════════════════════════
+// QUESTIONS
+// ═══════════════════════════════════
+const Qs=[
+  {id:"winner",      label:"Match Winner",               pts:3,  opts:(a,b)=>[a,b]},
+  {id:"both_score",  label:"Both Teams Score?",          pts:2,  opts:()=>["Yes","No"]},
+  {id:"total_goals", label:"Total Goals (90 min)",       pts:3,  opts:()=>["0–1","2–3","4–5","6+"]},
+  {id:"first_scorer",label:"First Goal By",              pts:3,  opts:(a,b)=>[a,b,"No goals"]},
+  {id:"exact",       label:"Exact Score (90 min)",       pts:5,  type:"score"},
+  {id:"ht_winner",   label:"Half-Time Leader",           pts:2,  opts:(a,b)=>[a,"Draw",b]},
+  {id:"yellows",     label:"Total Yellow Cards",         pts:2,  type:"number",max:20},
+  {id:"corners",     label:"Total Corners",              pts:2,  type:"number",max:30},
+  {id:"penalty_90",  label:"Penalty Awarded? (90 min)",  pts:3,  opts:()=>["Yes","No"]},
+  {id:"red_cards",   label:"Total Red Cards",            pts:2,  type:"number",max:5},
+  {id:"extra_time",  label:"Will match go to Extra Time?",pts:3, opts:()=>["Yes","No"]},
+  {id:"et_score",    label:"Score after Extra Time (120 min)",pts:4,type:"et_score",show:a=>a.extra_time==="Yes"},
+  {id:"penalties_q", label:"Will it go to Penalties?",  pts:3,  opts:()=>["Yes","No"],show:a=>a.extra_time==="Yes"},
+  {id:"pen_score",   label:"Penalty Shootout Score",     pts:4,  type:"pen_score",show:a=>a.extra_time==="Yes"&&a.penalties_q==="Yes"},
 ];
-const MAX_PTS = 28;
 
-// ─── State ─────────────────────────────────────────────────────────
-let pDate = nextOpenDate(), rDate = todayOrFirst(), aDate = todayOrFirst();
-let curMatch = null, curAnswers = {}, curSA = "", curSB = "";
-let adminUnlocked = false;
-const ADMIN_PIN = "1234";
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+let CUR={name:"",isAdmin:false};
+let pDate=nextOpen(),rDate=nextOpen(),aDate=nextOpen(),adminPredsDate=nextOpen();
+let curMatch=null,curAns={},curSA="",curSB="",curETA="",curETB="",curPenA="",curPenB="";
+let _pName="",_pPw="";
 
-function todayOrFirst(){
-  const today = new Date().toISOString().slice(0,10);
-  const dates = Object.keys(S).sort();
-  return dates.includes(today) ? today : dates[0];
+function nextOpen(){
+  const now=new Date();
+  for(const d of Object.keys(S).sort())
+    if((S[d]||[]).some(m=>now<new Date(m.ko))) return d;
+  return Object.keys(S).sort().pop();
 }
-function nextOpenDate(){
-  const now = new Date();
-  const dates = Object.keys(S).sort();
-  for(const d of dates){
-    if((S[d]||[]).some(m => now < new Date(m.ko))) return d;
-  }
-  return dates[dates.length-1];
+function kicked(m){return new Date()>=new Date(m.ko);}
+function over(m){return new Date()>=new Date(new Date(m.ko).getTime()+115*60000);}
+function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
+function allMatches(){return Object.values(S).flat();}
+
+// ═══════════════════════════════════
+// AUTH
+// ═══════════════════════════════════
+function genPw(){const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join("");}
+function showMsg(msg,ok){const el=document.getElementById("loginMsg");el.style.display="block";el.style.background=ok?"#0D2E1E":"#1A0808";el.style.color=ok?"#00D563":"#F87171";el.textContent=msg;}
+function hideMsg(){document.getElementById("loginMsg").style.display="none";}
+function setStep(s){["stepName","stepNew","stepReturn","stepAdmin"].forEach(x=>document.getElementById(x).style.display="none");document.getElementById(s).style.display="block";}
+function checkName(){
+  const nm=document.getElementById("loginName").value.trim();
+  if(!nm){showMsg("Please enter your name");return;}
+  hideMsg();_pName=nm;
+  const stored=localStorage.getItem("user:"+nm.toLowerCase());
+  if(stored){document.getElementById("retName").textContent=nm;document.getElementById("loginPw").value="";setStep("stepReturn");}
+  else{_pPw=genPw();document.getElementById("newName").textContent=nm;document.getElementById("genPw").textContent=_pPw;setStep("stepNew");}
 }
-function mk(date,m){ return date+"::"+m.t1+"vs"+m.t2; }
-function kicked(m){ return new Date() >= new Date(m.ko); }
-function over(m){ return new Date() >= new Date(new Date(m.ko).getTime()+115*60000); }
-function hasUpcoming(date){ return (S[date]||[]).some(m=>!kicked(m)); }
-function fmtDate(d){
-  const [y,mo,dy]=d.split("-");
-  return new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+function copyPw(){navigator.clipboard.writeText(_pPw).catch(()=>{});const btn=event.target;btn.textContent="✅ Copied!";setTimeout(()=>btn.textContent="📋 Copy",2000);}
+function registerUser(){localStorage.setItem("user:"+_pName.toLowerCase(),JSON.stringify({displayName:_pName,pw:_pPw,createdAt:Date.now()}));enterApp(_pName,false);}
+function loginUser(){
+  const pw=document.getElementById("loginPw").value.trim().toUpperCase();
+  const stored=localStorage.getItem("user:"+_pName.toLowerCase());
+  if(!stored){showMsg("User not found");return;}
+  const data=JSON.parse(stored);
+  if(pw!==data.pw){showMsg("Wrong password — check your saved code");return;}
+  enterApp(data.displayName,false);
+}
+function forgotPw(){showMsg("Ask admin to look up your password in the Admin panel");}
+function showAdminLogin(){setStep("stepAdmin");hideMsg();}
+function loginAdmin(){if(document.getElementById("adminPwInput").value!==ADMIN_PW){showMsg("Wrong admin password");return;}enterApp(ADMIN_NAME,true);}
+function backToName(){setStep("stepName");hideMsg();}
+function enterApp(name,isAdmin){
+  CUR={name,isAdmin};
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("mainApp").style.display="block";
+  document.getElementById("curName").textContent=name;
+  if(isAdmin){document.getElementById("adminBadge").style.display="inline";document.getElementById("adminTabBtn").style.display="block";}
+  renderPredict();
+  // Auto-fetch pending results in background
+  setTimeout(autoFetchPending,1000);
+}
+function logout(){
+  CUR={name:"",isAdmin:false};
+  document.getElementById("mainApp").style.display="none";
+  document.getElementById("loginScreen").style.display="flex";
+  document.getElementById("loginName").value="";
+  setStep("stepName");hideMsg();
+  document.getElementById("adminBadge").style.display="none";
+  document.getElementById("adminTabBtn").style.display="none";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
+  document.querySelector(".tab").classList.add("on");
+  ["predict","myBets","results","leaderboard","admin"].forEach(x=>document.getElementById("t-"+x).style.display="none");
+  document.getElementById("t-predict").style.display="block";
 }
 
-// ─── Storage ───────────────────────────────────────────────────────
-function savePred(date,m,name,ans,sa,sb){
-  localStorage.setItem("p:"+mk(date,m)+":"+name.trim().toLowerCase(),
-    JSON.stringify({name:name.trim(),date,match:m,ans,sa,sb}));
+// ═══════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════
+function savePred(matchId,name,ans,sa,sb,etA,etB,penA,penB){
+  localStorage.setItem("pred:"+matchId+":"+name.toLowerCase(),JSON.stringify({name,matchId,ans,sa,sb,etA,etB,penA,penB,savedAt:Date.now()}));
 }
-function loadPreds(date){
-  const out={};
-  for(const k in localStorage){
-    if(k.startsWith("p:"+date+"::")){
-      const d=JSON.parse(localStorage[k]);
-      const key=mk(d.date,d.match);
-      if(!out[key]) out[key]=[];
-      out[key].push(d);
-    }
-  }
-  return out;
-}
-function allPreds(){
+function loadMyPreds(name){
   const out=[];
-  for(const k in localStorage) if(k.startsWith("p:")) out.push(JSON.parse(localStorage[k]));
+  for(const k in localStorage) if(k.startsWith("pred:")&&k.endsWith(":"+name.toLowerCase())) out.push(JSON.parse(localStorage[k]));
   return out;
 }
-function deletePred(date,m,name){
-  localStorage.removeItem("p:"+mk(date,m)+":"+name.trim().toLowerCase());
+function loadMatchPreds(matchId){
+  const out=[];
+  for(const k in localStorage) if(k.startsWith("pred:"+matchId+":")) out.push(JSON.parse(localStorage[k]));
+  return out;
 }
-function saveResult(date,m,res){
-  localStorage.setItem("r:"+mk(date,m),JSON.stringify(res));
+function loadAllPreds(){
+  const out=[];
+  for(const k in localStorage) if(k.startsWith("pred:")) out.push(JSON.parse(localStorage[k]));
+  return out;
 }
-function loadResult(date,m){
-  const v=localStorage.getItem("r:"+mk(date,m));
-  return v?JSON.parse(v):null;
-}
-function allResults(){
+function saveResult(matchId,res){localStorage.setItem("res:"+matchId,JSON.stringify(res));}
+function loadResult(matchId){const v=localStorage.getItem("res:"+matchId);return v?JSON.parse(v):null;}
+function loadAllResults(){
   const out={};
-  for(const k in localStorage) if(k.startsWith("r:")){
-    out[k.slice(2)]=JSON.parse(localStorage[k]);
-  }
+  for(const k in localStorage) if(k.startsWith("res:")) out[k.slice(4)]=JSON.parse(localStorage[k]);
   return out;
 }
 
-// ─── Scoring ────────────────────────────────────────────────────────
-function score(pred,res){
+// ═══════════════════════════════════
+// SCORING
+// ═══════════════════════════════════
+function calcScore(pred,res){
   if(!res) return null;
-  let pts=0;
-  const a=pred.ans, r=res;
+  let pts=0;const a=pred.ans,r=res;
   if(a.winner===r.winner) pts+=3;
   if(a.both_score===r.both_score) pts+=2;
   if(a.total_goals===r.total_goals) pts+=3;
   if(a.first_scorer===r.first_scorer) pts+=3;
   if(String(pred.sa)===String(r.sa)&&String(pred.sb)===String(r.sb)) pts+=5;
   if(a.ht_winner===r.ht_winner) pts+=2;
-  if(a.yellows===r.yellows) pts+=2;
-  if(a.corners===r.corners) pts+=2;
-  if(a.penalty===r.penalty) pts+=3;
-  if(a.red_card===r.red_card) pts+=3;
+  if(String(a.yellows)===String(r.yellows)) pts+=2;
+  if(String(a.corners)===String(r.corners)) pts+=2;
+  if(a.penalty_90===r.penalty_90) pts+=3;
+  if(String(a.red_cards)===String(r.red_cards)) pts+=2;
+  if(a.extra_time===r.extra_time) pts+=3;
+  if(r.extra_time==="Yes"){
+    if(String(pred.etA)===String(r.etA)&&String(pred.etB)===String(r.etB)) pts+=4;
+    if(a.penalties_q===r.penalties_q) pts+=3;
+    if(r.penalties_q==="Yes"&&String(pred.penA)===String(r.penA)&&String(pred.penB)===String(r.penB)) pts+=4;
+  }
   return pts;
 }
-
-// ─── TAB SWITCHING ─────────────────────────────────────────────────
-function showTab(t,btn){
-  ["predict","results","leaderboard","admin"].forEach(x=>{
-    document.getElementById("t-"+x).style.display="none";
-  });
-  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
-  document.getElementById("t-"+t).style.display="block";
-  btn.classList.add("on");
-  if(t==="results") renderLeaderboard("lbContent");
-  if(t==="leaderboard") renderLeaderboard("lbContent2");
-  if(t==="admin"&&adminUnlocked) renderAdminPanel();
+function maxPts(res){
+  let m=30;
+  if(res&&res.extra_time==="Yes"){m+=7;if(res.penalties_q==="Yes")m+=4;}
+  return m;
 }
 
-// ─── DATE STRIP ────────────────────────────────────────────────────
-function stripHTML(sel,activeDate,onClick){
-  const dates=Object.keys(S).sort();
+// ═══════════════════════════════════
+// AUTO-FETCH RESULTS
+// ═══════════════════════════════════
+async function fetchMatchResultFromWeb(m){
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6",max_tokens:800,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        messages:[{role:"user",content:`Search for the final FIFA World Cup 2026 Round of 32 result: ${m.t1} vs ${m.t2} on ${m.date||"June 28 2026"}. Return ONLY valid JSON (no markdown, no explanation):
+{"sa":<${m.t1} goals in 90min>,"sb":<${m.t2} goals in 90min>,"winner":"<${m.t1}|${m.t2}>","both_score":"<Yes|No>","total_goals":"<0–1|2–3|4–5|6+>","first_scorer":"<${m.t1}|${m.t2}|No goals>","ht_winner":"<${m.t1}|Draw|${m.t2}>","yellows":<exact number of yellow cards, integer>,"corners":<exact total corners, integer>,"penalty_90":"<Yes|No>","red_cards":<exact number of red cards, integer>,"extra_time":"<Yes|No>","etA":<${m.t1} goals after ET else 0>,"etB":<${m.t2} goals after ET else 0>,"penalties_q":"<Yes|No>","penA":<${m.t1} penalty goals else 0>,"penB":<${m.t2} penalty goals else 0>,"status":"<final|not_finished>"}`}]
+      })
+    });
+    const data=await resp.json();
+    const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
+    const result=JSON.parse(text);
+    if(result.status==="final") return result;
+    return null;
+  }catch(e){console.warn("Auto-fetch failed for",m.t1,"vs",m.t2,e.message);return null;}
+}
+
+async function autoFetchPending(){
+  const allRes=loadAllResults();
+  const pending=allMatches().filter(m=>over(m)&&!allRes[m.id]);
+  if(!pending.length) return;
+  document.getElementById("fetchingIndicator").style.display="inline";
+  let fetched=0;
+  for(const m of pending){
+    const result=await fetchMatchResultFromWeb(m);
+    if(result){saveResult(m.id,result);fetched++;}
+    await new Promise(r=>setTimeout(r,500)); // small delay between requests
+  }
+  document.getElementById("fetchingIndicator").style.display="none";
+  if(fetched>0){
+    showBanner(`✅ ${fetched} result${fetched>1?"s":""} auto-fetched! Scores updated.`,"#00D563");
+    renderPredict();
+    if(document.getElementById("t-leaderboard").style.display!=="none") renderLeaderboard();
+    if(document.getElementById("t-results").style.display!=="none") renderResults();
+  }
+}
+
+async function manualFetchResult(matchId){
+  const m=allMatches().find(x=>x.id===matchId);if(!m)return;
+  const btn=event.target;btn.disabled=true;btn.textContent="🔄 Fetching…";
+  const result=await fetchMatchResultFromWeb(m);
+  if(!result){btn.disabled=false;btn.textContent="🔄 Fetch Result";alert("Match not finished yet or couldn't get result.");return;}
+  saveResult(matchId,result);
+  let msg=`${m.t1} ${result.sa}–${result.sb} ${m.t2}`;
+  if(result.extra_time==="Yes")msg+=` (AET ${result.etA}–${result.etB}${result.penalties_q==="Yes"?`, Pen ${result.penA}–${result.penB}`:""})`;
+  alert("✅ Result saved!\n"+msg);
+  renderAdminResults();renderLeaderboard();renderResults();renderPredict();
+}
+
+function showBanner(msg,color){
+  const b=document.createElement("div");
+  b.style.cssText=`position:fixed;top:50px;left:0;right:0;z-index:300;text-align:center;padding:11px;background:#0D2E1E;border-bottom:2px solid ${color};color:${color};font-weight:700;font-size:13px`;
+  b.textContent=msg;document.body.appendChild(b);setTimeout(()=>b.remove(),4000);
+}
+
+// ═══════════════════════════════════
+// TABS
+// ═══════════════════════════════════
+function showTab(t,btn){
+  ["predict","myBets","results","leaderboard","admin"].forEach(x=>document.getElementById("t-"+x).style.display="none");
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
+  document.getElementById("t-"+t).style.display="block";btn.classList.add("on");
+  if(t==="myBets")renderMyBets();
+  if(t==="results")renderResults();
+  if(t==="leaderboard")renderLeaderboard();
+  if(t==="admin")renderAdmin();
+}
+
+// ═══════════════════════════════════
+// DATE STRIP
+// ═══════════════════════════════════
+function stripHTML(active,onClick){
   const today=new Date().toISOString().slice(0,10);
-  return dates.map(d=>{
-    const [y,mo,dy]=d.split("-");
+  return Object.keys(S).sort().map(d=>{
+    const[y,mo,dy]=d.split("-");
     const dow=new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short"});
-    const isOn=d===activeDate;
-    const isToday=d===today;
-    const open=hasUpcoming(d);
-    const isPast=!open&&d<today;
-    let tag="";
-    if(isToday&&open) tag='<div style="color:#00D563;font-size:8px;font-weight:700">TODAY</div>';
-    else if(isToday&&!open) tag='<div style="color:#4A5568;font-size:8px">DONE</div>';
-    else if(open) tag='<div style="color:#60A5FA;font-size:8px;font-weight:700">OPEN</div>';
-    else tag='<div style="color:#2D3A52;font-size:8px">DONE</div>';
-    return `<button class="dbtn ${isOn?"on":""}" onclick="${onClick}('${d}')" style="${isPast?"opacity:.45":""}">
-      <div class="dw">${dow.toUpperCase()}</div>
-      <div class="dd">${dy}</div>
-      ${tag}
-    </button>`;
+    const isOn=d===active,open=(S[d]||[]).some(m=>!kicked(m));
+    const hasResults=(S[d]||[]).some(m=>loadResult(m.id)!==null);
+    let tag=open?'<div class="dtag" style="color:#60A5FA">OPEN</div>':'<div class="dtag" style="color:#2D3A52">DONE</div>';
+    if(hasResults)tag='<div class="dtag" style="color:#00D563">✓</div>';
+    if(d===today&&open)tag='<div class="dtag" style="color:#00D563">TODAY</div>';
+    return`<button class="dbtn ${isOn?"on":""}" onclick="${onClick}('${d}')"><div class="dw">${dow.toUpperCase()}</div><div class="dd">${dy}</div>${tag}</button>`;
   }).join("");
 }
 
-// ─── PREDICT TAB ───────────────────────────────────────────────────
+// ═══════════════════════════════════
+// PREDICT TAB
+// ═══════════════════════════════════
 function renderPredict(){
-  document.getElementById("pStrip").innerHTML=stripHTML("#pStrip",pDate,"setPDate");
-  const matches=S[pDate]||[];
-  const res=allResults();
-  const allLocked=matches.length>0&&matches.every(m=>kicked(m));
-  let html="";
-
-  if(allLocked){
-    const next=nextOpenDate();
-    html+=`<div style="background:#0D1A2A;border:1px solid #1F3A52;border-radius:12px;padding:14px 16px;margin-bottom:12px;text-align:center">
-      <div style="font-size:20px;margin-bottom:4px">⏰</div>
-      <div style="color:#60A5FA;font-size:13px;font-weight:700;margin-bottom:4px">All matches today locked</div>
-      <div style="color:#4A5568;font-size:12px;margin-bottom:10px">Predictions close once a match starts</div>
-      <button onclick="setPDate('${next}')" style="background:#00D563;color:#0A0E1A;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">
-        👉 Next open matches
-      </button>
-    </div>`;
+  document.getElementById("pStrip").innerHTML=stripHTML(pDate,"setPDate");
+  const matches=S[pDate]||[];const allRes=loadAllResults();let html="";
+  if(matches.length&&matches.every(m=>kicked(m))){
+    const nxt=nextOpen();
+    if(nxt!==pDate)html+=`<div style="background:#0D1A2A;border:1px solid #1F3A52;border-radius:12px;padding:12px;margin-bottom:12px;text-align:center"><div style="color:#60A5FA;font-weight:700;margin-bottom:7px;font-size:12px">⏰ All matches today started</div><button onclick="setPDate('${nxt}')" style="background:#00D563;color:#0A0E1A;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer">👉 Next open matches →</button></div>`;
   }
-
   matches.forEach((m,i)=>{
-    const isKicked=kicked(m);
-    const r=res[mk(pDate,m)];
-    const scoreStr=r?`<span style="color:#00D563;font-weight:700">✓ ${r.sa}–${r.sb} FT</span>`
-      :isKicked?`<span style="color:#F87171;font-weight:700">🔴 Started · Locked</span>`
-      :`<span style="color:#00D563;font-size:11px;font-weight:700">🟢 OPEN · ${m.time} ET</span>`;
-    html+=`<div class="mcard ${isKicked?"locked":""} ${r?"done":""}" onclick="${isKicked?"":"openForm("+i+")"}">
-      <div class="mhdr"><span class="grp">GROUP ${m.g}</span>${scoreStr}</div>
+    const k=kicked(m),res=allRes[m.id];
+    const hasPred=!!localStorage.getItem("pred:"+m.id+":"+CUR.name.toLowerCase());
+    const badge=res?`<span class="badge-ft">✓ ${res.sa}–${res.sb}${res.extra_time==="Yes"?(res.penalties_q==="Yes"?" Pen":" AET"):""}</span>`
+      :k?`<span class="badge-live">🔴 LIVE</span>`
+      :`<span style="color:#00D563;font-size:10px;font-weight:700">🟢 ${m.time} ET</span>`;
+    html+=`<div class="mcard ${k?"locked":""} ${res?"done":""}" onclick="${k?"":"openForm("+i+")"}">
+      <div class="mhdr"><span class="gbadge">R32 · ${m.venue}</span>${badge}</div>
       <div class="mteams">
         <div class="tside"><span class="tflag">${f(m.t1)}</span><span class="tname">${m.t1}</span></div>
-        <span class="mvs" style="color:${isKicked?"#3A2020":"#00D563"}">${isKicked?"LOCKED":"PREDICT →"}</span>
+        <div style="text-align:center;padding:0 8px">
+          <div style="color:${k?"#3A2020":"#00D563"};font-weight:800;font-size:11px">${k?"LOCKED":"PREDICT →"}</div>
+          ${hasPred?`<div style="color:#00D563;font-size:9px;margin-top:1px">✓ Predicted</div>`:""}
+        </div>
         <div class="tside right"><span class="tname">${m.t2}</span><span class="tflag">${f(m.t2)}</span></div>
       </div>
     </div>`;
   });
-  if(!matches.length) html=`<div class="empty">No matches on this day</div>`;
+  if(!matches.length)html=`<div class="empty">No matches today</div>`;
   document.getElementById("pMatches").innerHTML=html;
 }
-function setPDate(d){ pDate=d; renderPredict(); }
+function setPDate(d){pDate=d;renderPredict();}
 
-// ─── LEADERBOARD ───────────────────────────────────────────────────
-function renderLeaderboard(containerId){
-  const res=allResults();
-  const preds=allPreds();
-  const tally={};
-  preds.forEach(p=>{
-    const key=mk(p.date,p.match);
-    const r=res[key];
-    const nm=p.name;
-    if(!tally[nm]) tally[nm]={name:nm,total:0,matched:0,predicted:0};
-    tally[nm].predicted++;
-    const pts=score(p,r);
-    if(pts!==null){ tally[nm].total+=pts; tally[nm].matched++; }
-  });
-  const board=Object.values(tally).sort((a,b)=>b.total-a.total);
-  const MEDALS=["🥇","🥈","🥉"];
-
-  let html="";
-  if(!board.length){
-    html=`<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏆</div><strong>Leaderboard updates after match results</strong><p style="color:#4A5568;font-size:12px;margin-top:8px">Scores accumulate from all completed matches</p></div>`;
-  } else {
-    html=`<div style="background:#0D1A0D;border:2px solid #00D563;border-radius:14px;padding:16px;margin-bottom:16px">
-      <div style="color:#00D563;font-size:13px;font-weight:800">📊 LIVE CUMULATIVE SCORES</div>
-      <div style="color:#4A5568;font-size:11px;margin-top:4px">Totals from all matches completed</div>
-    </div>`;
-    board.forEach((p,i)=>{
-      const maxPts=p.matched*MAX_PTS;
-      html+=`<div class="lbcard ${i===0?"gold":""}">
-        <div class="lbrank">${i<3?MEDALS[i]:`<span style="color:#4A5568;font-size:13px;font-weight:700">#${i+1}</span>`}</div>
-        <div class="lbname">
-          <div class="lbname-main">${p.name}</div>
-          <div class="lbname-sub">${p.matched}/${p.predicted} matches scored</div>
-        </div>
-        <div class="lbpts">
-          <div class="lbpts-main">${p.total}</div>
-          <div class="lbpts-sub">/${maxPts} max</div>
-        </div>
-      </div>`;
-    });
-  }
-  document.getElementById(containerId).innerHTML=html;
-}
-
-// ─── FORMS ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════
+// PREDICTION FORM
+// ═══════════════════════════════════
 function openForm(idx){
-  curMatch=S[pDate][idx];
-  curAnswers={};curSA="";curSB="";
-  document.getElementById("nMatchInfo").innerHTML=`Group ${curMatch.g} · ${fmtDate(pDate)} · ${curMatch.time} ET`;
-  document.getElementById("nFlag1").textContent=f(curMatch.t1);
-  document.getElementById("nTeam1").textContent=curMatch.t1;
-  document.getElementById("nFlag2").textContent=f(curMatch.t2);
-  document.getElementById("nTeam2").textContent=curMatch.t2;
-  document.getElementById("pName").value="";
-  document.getElementById("nameView").style.display="block";
-  document.getElementById("questionsView").style.display="none";
-  window.scrollTo(0,0);
-  setTimeout(()=>document.getElementById("pName").focus(),300);
+  curMatch={...S[pDate][idx],date:pDate};curAns={};curSA="";curSB="";curETA="";curETB="";curPenA="";curPenB="";
+  document.getElementById("nMatchInfo").innerHTML=`R32 · ${fmtDate(pDate)} · ${curMatch.time} ET`;
+  document.getElementById("nFlag1").textContent=f(curMatch.t1);document.getElementById("nTeam1").textContent=curMatch.t1;
+  document.getElementById("nFlag2").textContent=f(curMatch.t2);document.getElementById("nTeam2").textContent=curMatch.t2;
+  document.getElementById("confirmName").textContent=CUR.name;
+  document.getElementById("nameView").classList.add("on");document.getElementById("questionsView").classList.remove("on");
 }
-
 function startQuestions(){
-  const name=document.getElementById("pName").value.trim();
-  if(!name){
-    document.getElementById("pName").style.borderColor="#F87171";
-    document.getElementById("pName").placeholder="⚠️ Enter your name!";
-    return;
-  }
-  document.getElementById("pName").style.borderColor="#1F2D42";
   document.getElementById("fTitle").innerHTML=`${f(curMatch.t1)} ${curMatch.t1} <span style="color:#4A5568">vs</span> ${curMatch.t2} ${f(curMatch.t2)}`;
-  document.getElementById("fSub").innerHTML=`${name} · Group ${curMatch.g} · ${curMatch.time} ET`;
-  renderQuestions();
-  document.getElementById("nameView").style.display="none";
-  document.getElementById("questionsView").style.display="block";
+  document.getElementById("fSub").innerHTML=`${CUR.name} · R32 · ${curMatch.time} ET`;
+  renderQs();
+  document.getElementById("nameView").classList.remove("on");document.getElementById("questionsView").classList.add("on");
   document.getElementById("questionsView").scrollTo(0,0);
 }
+function backToConfirm(){document.getElementById("questionsView").classList.remove("on");document.getElementById("nameView").classList.add("on");}
+function closeForm(){document.getElementById("nameView").classList.remove("on");document.getElementById("questionsView").classList.remove("on");}
 
-function backToName(){
-  document.getElementById("questionsView").style.display="none";
-  document.getElementById("nameView").style.display="block";
+function getVisibleQs(){return Qs.filter(q=>!q.show||q.show(curAns));}
+function isQAns(q){
+  switch(q.type){
+    case"score":return curSA!==""&&curSB!=="";
+    case"et_score":return curETA!==""&&curETB!=="";
+    case"pen_score":return curPenA!==""&&curPenB!=="";
+    case"number":return curAns[q.id]!==undefined&&String(curAns[q.id]).trim()!=="";
+    default:return!!curAns[q.id];
+  }
 }
 
-function closeForm(){
-  document.getElementById("nameView").style.display="none";
-  document.getElementById("questionsView").style.display="none";
-}
-
-function renderQuestions(){
-  const m=curMatch;
-  let html="";
-  Qs.forEach((q,i)=>{
-    const answered = q.type==="score"?(curSA!==""&&curSB!==""):!!curAnswers[q.id];
-    html+=`<div class="fcard ${answered?"answered":""}" id="qcard-${q.id}">
+function renderQs(){
+  const m=curMatch,vQs=getVisibleQs();let html="";
+  vQs.forEach((q,i)=>{
+    const ans=isQAns(q),isCond=!!q.show;
+    html+=`<div class="fcard ${ans?"answered":""} ${isCond?"conditional":""}">
       <div class="flabel-q">
-        <span><span style="color:#2D3A52;margin-right:6px;font-size:11px">${i+1}.</span>${q.label}</span>
-        <span class="pts-badge ${answered?"on":""}">${answered?"✓ ":""}${q.pts}pts</span>
+        <span>${isCond?`<span class="ctag">IF ET</span>`:""}
+          <span style="color:#2D3A52;margin-right:5px;font-size:10px">${i+1}.</span>${q.label}
+        </span>
+        <span class="pts-b ${ans?"on":""}">${ans?"✓ ":""}${q.pts}pts</span>
       </div>`;
-    if(q.type==="score"){
-      html+=`<div style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1;text-align:center">
-          <div style="color:#60A5FA;font-size:11px;font-weight:600;margin-bottom:5px">${f(m.t1)} ${m.t1}</div>
-          <input type="number" min="0" max="20" value="${curSA}" placeholder="0" onchange="curSA=this.value;updateProg()" style="width:100%;text-align:center;font-size:24px;font-weight:800;padding:10px 0">
-        </div>
-        <span style="color:#6B7A99;font-weight:700;font-size:18px">–</span>
-        <div style="flex:1;text-align:center">
-          <div style="color:#F87171;font-size:11px;font-weight:600;margin-bottom:5px">${f(m.t2)} ${m.t2}</div>
-          <input type="number" min="0" max="20" value="${curSB}" placeholder="0" onchange="curSB=this.value;updateProg()" style="width:100%;text-align:center;font-size:24px;font-weight:800;padding:10px 0">
-        </div>
-      </div>`;
-    } else {
-      const opts=q.opts(m.t1,m.t2);
-      html+=`<div class="opts">${opts.map(o=>`
-        <button class="optbtn ${curAnswers[q.id]===o?"on":""}" onclick="pickAns('${q.id}','${o.replace(/'/g,"\\'")}')">
-          ${o===m.t1?f(m.t1)+" ":o===m.t2?f(m.t2)+" ":""}${o}
-        </button>`).join("")}</div>`;
+    switch(q.type){
+      case"score":html+=scoreRow(m.t1,m.t2,curSA,curSB,"curSA","curSB");break;
+      case"et_score":
+        html+=`<div style="color:#60A5FA;font-size:10px;margin-bottom:6px">Score after 120 min (includes all goals inc. ET)</div>`;
+        html+=scoreRow(m.t1,m.t2,curETA,curETB,"curETA","curETB");break;
+      case"pen_score":
+        html+=`<div style="color:#A78BFA;font-size:10px;margin-bottom:6px">Penalty goals scored (e.g. 5–4)</div>`;
+        html+=scoreRow(m.t1,m.t2,curPenA,curPenB,"curPenA","curPenB","5","5");break;
+      case"number":
+        html+=`<div style="display:flex;align-items:center;gap:12px">
+          <input type="number" min="0" max="${q.max||20}" value="${curAns[q.id]||""}" placeholder="0"
+            onchange="curAns['${q.id}']=this.value;updateProg()"
+            style="width:90px;text-align:center;font-size:22px;font-weight:800;padding:9px 0;border-radius:8px">
+          <span style="color:#4A5568;font-size:11px">${q.id==="yellows"?"Yellow cards (0–20)":q.id==="corners"?"Total corners":"Red cards (0–5)"}</span>
+        </div>`;break;
+      default:
+        const opts=q.opts(m.t1,m.t2);
+        html+=`<div class="opts">${opts.map(o=>`<button class="optbtn ${curAns[q.id]===o?"on":""}" onclick="pickAns('${q.id}','${o.replace(/'/g,"\\'")}')"> ${o===m.t1?f(m.t1)+" ":o===m.t2?f(m.t2)+" ":""}${o}</button>`).join("")}</div>`;
     }
     html+=`</div>`;
   });
-  document.getElementById("questions").innerHTML=html;
-  updateProg();
+  document.getElementById("questions").innerHTML=html;updateProg();
+}
+
+function scoreRow(t1,t2,vA,vB,varA,varB,ph="0",ph2="0"){
+  return`<div style="display:flex;align-items:center;gap:8px">
+    <div style="flex:1;text-align:center"><div style="color:#60A5FA;font-size:10px;font-weight:600;margin-bottom:4px">${f(t1)} ${t1}</div>
+      <input type="number" min="0" max="30" value="${vA}" placeholder="${ph}" onchange="${varA}=this.value;updateProg()" style="width:100%;text-align:center;font-size:22px;font-weight:800;padding:9px 0;border-radius:8px">
+    </div>
+    <span style="color:#6B7A99;font-size:16px;font-weight:700">–</span>
+    <div style="flex:1;text-align:center"><div style="color:#F87171;font-size:10px;font-weight:600;margin-bottom:4px">${f(t2)} ${t2}</div>
+      <input type="number" min="0" max="30" value="${vB}" placeholder="${ph2}" onchange="${varB}=this.value;updateProg()" style="width:100%;text-align:center;font-size:22px;font-weight:800;padding:9px 0;border-radius:8px">
+    </div>
+  </div>`;
 }
 
 function pickAns(id,val){
-  curAnswers[id]=val;
-  renderQuestions();
+  curAns[id]=val;
+  if(id==="extra_time"&&val==="No"){delete curAns.penalties_q;curETA="";curETB="";curPenA="";curPenB="";}
+  if(id==="penalties_q"&&val==="No"){curPenA="";curPenB="";}
+  renderQs();
 }
-
 function updateProg(){
-  const total=Qs.length;
-  const scoreAnswered=(curSA!==""&&curSB!=="");
-  const answered=Object.keys(curAnswers).length+(scoreAnswered?1:0);
-  const pct=(answered/total)*100;
-  document.getElementById("pFill").style.width=pct+"%";
+  const vQs=getVisibleQs();
+  const answered=vQs.filter(isQAns).length,total=vQs.length;
+  document.getElementById("pFill").style.width=(answered/total*100)+"%";
   document.getElementById("fCount").textContent=answered+"/"+total;
-  const allDone=Qs.every(q=>q.type==="score"?scoreAnswered:!!curAnswers[q.id]);
+  const allDone=vQs.every(isQAns);
   const btn=document.getElementById("submitBtn");
   btn.disabled=!allDone;
   btn.textContent=allDone?"🔒 Lock In My Predictions!":(total-answered)+" question"+(total-answered!==1?"s":"")+" left…";
 }
-
 function submitPred(){
-  const name=document.getElementById("pName").value.trim();
-  if(!name){alert("Name missing!");return;}
-  if(curSA===""||curSB===""){alert("Enter exact score!");return;}
-  savePred(pDate,curMatch,name,curAnswers,curSA,curSB);
+  if(!CUR.name||!getVisibleQs().every(isQAns))return;
+  savePred(curMatch.id,CUR.name,curAns,curSA,curSB,curETA,curETB,curPenA,curPenB);
   closeForm();
-  const banner=document.createElement("div");
-  banner.style.cssText="position:fixed;top:50px;left:0;right:0;z-index:300;text-align:center;padding:14px;background:#0D2E1E;border-bottom:2px solid #00D563;color:#00D563;font-weight:700;font-size:15px";
-  banner.textContent="✅ "+name+"'s prediction locked!";
-  document.body.appendChild(banner);
-  setTimeout(()=>banner.remove(),3000);
+  showBanner("✅ "+CUR.name+"'s prediction locked for "+curMatch.t1+" vs "+curMatch.t2+"!","#00D563");
   renderPredict();
 }
 
-// ─── ADMIN: AUTO-FETCH ─────────────────────────────────────────────
-function checkPin(){
-  const pin=document.getElementById("adminPin").value;
-  if(pin===ADMIN_PIN){
-    adminUnlocked=true;
-    document.getElementById("adminLock").style.display="none";
-    document.getElementById("adminPanel").style.display="block";
-    renderAdminPanel();
-  } else {
-    alert("Wrong PIN");
-  }
-}
-
-function renderAdminPanel(){
-  renderAutoFetch();
-  renderDuplicates();
-}
-
-function renderAutoFetch(){
-  document.getElementById("aStrip").innerHTML=stripHTML("#aStrip",aDate,"setADate");
-  const matches=S[aDate]||[];
-  const res=allResults();
+// ═══════════════════════════════════
+// MY BETS TAB
+// ═══════════════════════════════════
+function renderMyBets(){
+  const allRes=loadAllResults(),myPreds=loadMyPreds(CUR.name);
+  if(!myPreds.length){document.getElementById("myBetsContent").innerHTML=`<div class="empty">📭 No predictions yet.<br><br>Go to ⚽ Predict!</div>`;return;}
   let html="";
-  matches.forEach((m,i)=>{
-    const key=mk(aDate,m);
-    const existing=res[key];
-    const isOver=over(m);
-    html+=`<div style="background:#111827;border:1.5px solid ${existing?"#1A3A2A":"#1F2D42"};border-radius:14px;padding:14px 16px;margin-bottom:10px">
-      <div class="mhdr"><span class="grp">GROUP ${m.g}</span>
-        ${existing?`<span style="color:#00D563;font-weight:700">✓ ${existing.sa}–${existing.sb}</span>`
-          :(isOver?`<span style="color:#F59E0B;font-size:11px">⏳ Over</span>`
-          :`<span style="color:#4A5568;font-size:11px">${m.time} ET</span>`)}
+  myPreds.sort((a,b)=>a.matchId.localeCompare(b.matchId)).forEach(pred=>{
+    const m=allMatches().find(x=>x.id===pred.matchId)||{t1:"?",t2:"?",time:"?",venue:"?"};
+    const res=loadResult(pred.matchId);
+    const pts=calcScore(pred,res);const maxP=maxPts(res);
+    html+=`<div class="fcard" style="${res?"border-color:#1A3A2A":""}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div>
+          <div style="color:#4A5568;font-size:10px;margin-top:2px">${m.venue} · ${m.time} ET</div></div>
+        ${pts!==null?`<div style="text-align:right"><div style="color:${pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171"};font-weight:900;font-size:20px">${pts}</div><div style="color:#4A5568;font-size:9px">/${maxP} pts</div></div>`
+        :`<div style="color:#4A5568;font-size:10px">Pending</div>`}
       </div>
-      <div class="mteams" style="margin-bottom:10px">
-        <div class="tside"><span class="tflag">${f(m.t1)}</span><span class="tname">${m.t1}</span></div>
-        <span class="mvs">vs</span>
-        <div class="tside right"><span class="tname">${m.t2}</span><span class="tflag">${f(m.t2)}</span></div>
+      <div style="display:flex;align-items:center;gap:10px;background:#0A0E1A;border-radius:8px;padding:8px;margin-bottom:8px">
+        <div style="flex:1;text-align:center"><div style="color:#60A5FA;font-size:10px;font-weight:600">${f(m.t1)} ${m.t1}</div><div style="font-size:22px;font-weight:900">${pred.sa}</div></div>
+        <div style="color:#4A5568;font-size:16px">–</div>
+        <div style="flex:1;text-align:center"><div style="color:#F87171;font-size:10px;font-weight:600">${f(m.t2)} ${m.t2}</div><div style="font-size:22px;font-weight:900">${pred.sb}</div></div>
       </div>
-      ${existing?`<div style="color:#00D563;font-size:11px;font-weight:700">✅ Result fetched: ${existing.sa}–${existing.sb}</div>`
-        :(isOver?`<button onclick="fetchResult(${i})" style="width:100%;background:#0D2E1E;border:1px solid #00D563;color:#00D563;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer">🔄 Fetch Result</button>`
-        :``)}
+      ${pred.etA!==undefined&&pred.etA!==""?`<div style="background:#1A1A2A;border-radius:6px;padding:4px 8px;margin-bottom:6px;font-size:10px"><span style="color:#A78BFA;font-weight:600">ET: </span>${pred.etA}–${pred.etB}${pred.penA&&pred.penA!==""?` · <span style="color:#A78BFA;font-weight:600">Pen: </span>${pred.penA}–${pred.penB}`:""}</div>`:""}
+      <div style="display:flex;flex-wrap:wrap">${renderPills(pred,res)}</div>
+      ${res?`<div style="margin-top:7px;padding:5px 9px;background:#0D2E1E;border-radius:7px;font-size:10px;color:#00D563;font-weight:600">✅ ${m.t1} ${res.sa}–${res.sb} ${m.t2}${res.extra_time==="Yes"?` (AET${res.penalties_q==="Yes"?` Pen ${res.penA}–${res.penB}`:""})`:""}</div>`:""}
     </div>`;
   });
-  if(!matches.length) html=`<div class="empty">No matches on this day</div>`;
-  document.getElementById("aMatches").innerHTML=html;
+  document.getElementById("myBetsContent").innerHTML=html;
 }
 
-function setADate(d){ aDate=d; renderAutoFetch(); }
-
-async function fetchResult(idx){
-  const m=S[aDate][idx];
-  const btn=event.target;
-  btn.disabled=true;
-  btn.textContent="🔄 Fetching…";
-  
-  try {
-    // Mock result for demo - in real version would fetch from API
-    // For now, use a simple dialog to enter results
-    const sa=prompt(`${m.t1} goals:`,"0");
-    if(sa===null) {btn.disabled=false;btn.textContent="🔄 Fetch Result";return;}
-    const sb=prompt(`${m.t2} goals:`,"0");
-    if(sb===null) {btn.disabled=false;btn.textContent="🔄 Fetch Result";return;}
-    
-    // Auto-determine some fields
-    const saNum=parseInt(sa), sbNum=parseInt(sb);
-    const result={
-      sa:saNum, sb:sbNum,
-      winner: saNum>sbNum?m.t1:sbNum>saNum?m.t2:"Draw",
-      both_score: (saNum>0&&sbNum>0)?"Yes":"No",
-      total_goals: saNum+sbNum<=1?"0–1":saNum+sbNum<=3?"2–3":saNum+sbNum<=5?"4–5":"6+",
-      first_scorer: prompt("First goal scored by ("+m.t1+"/"+m.t2+"/No goals):", m.t1),
-      ht_winner: prompt("Half-time leader ("+m.t1+"/Draw/"+m.t2+"):", m.t1),
-      yellows: prompt("Total yellow cards (0–1/2–3/4–5/6+):", "0–1"),
-      corners: prompt("Total corners (0–5/6–9/10–13/14+):", "6–9"),
-      penalty: prompt("Penalty awarded? (Yes/No):", "No"),
-      red_card: prompt("Red card shown? (Yes/No):", "No"),
-    };
-    
-    saveResult(aDate,m,result);
-    renderLeaderboard("lbContent");
-    renderLeaderboard("lbContent2");
-    renderAutoFetch();
-    alert("✅ Result saved & leaderboard updated!");
-  } catch(e){
-    alert("Error: "+e.message);
-    btn.disabled=false;
-    btn.textContent="🔄 Fetch Result";
-  }
+function renderPills(pred,res){
+  return Qs.map(q=>{
+    if(q.type==="score"||q.type==="et_score"||q.type==="pen_score") return "";
+    if(q.show&&!q.show(pred.ans)) return "";
+    let val;
+    if(q.type==="number") val=pred.ans[q.id];
+    else val=pred.ans[q.id];
+    if(val===undefined||val==="") return "";
+    const resVal=res?String(res[q.type==="number"?q.id:q.id]):null;
+    const ok=resVal&&String(val)===resVal;
+    const bad=resVal&&!ok;
+    return`<span class="pill ${ok?"ok":bad?"bad":""}"><span class="pill-k">${q.label.split(" ").slice(-1)[0]}: </span><span style="font-weight:600">${val}</span>${ok?" ✓":bad?" ✗":""}</span>`;
+  }).join("");
 }
 
-// ─── ADMIN: DUPLICATES ─────────────────────────────────────────────
-function renderDuplicates(){
-  const allP=allPreds();
-  
-  // Group ALL predictions by bettor name (lowercase)
-  const byName={};
-  allP.forEach(p=>{
-    const nm=p.name.trim().toLowerCase();
-    if(!byName[nm]) byName[nm]={name:p.name,preds:[]};
-    byName[nm].preds.push(p);
-  });
-  
-  // Sort names alphabetically
-  const names=Object.values(byName).sort((a,b)=>a.name.localeCompare(b.name));
-  
-  let html="";
-  if(!names.length){
-    html=`<div style="color:#4A5568;font-size:12px;text-align:center;padding:20px">📭 No predictions yet</div>`;
-  } else {
-    // Show all bettors with their predictions
-    html+=`<div style="color:#8A9BBB;font-size:11px;margin-bottom:12px;text-align:center">
-      ${names.length} bettor${names.length!==1?"s":""} · ${allP.length} total predictions<br>
-      <span style="color:#4A5568">Delete wrong entries or duplicates (e.g. Ramesh vs Ramesh1)</span>
-    </div>`;
-    
-    names.forEach(bettor=>{
-      const nm=bettor.name;
-      const preds=bettor.preds;
-      html+=`<div style="background:#0A0E1A;border:1px solid #1F2D42;border-radius:10px;padding:12px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="color:#00D563;font-weight:700;font-size:14px">👤 ${nm}</span>
-          <span style="background:#1A2A3A;color:#6B7A99;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">${preds.length} prediction${preds.length!==1?"s":""}</span>
-        </div>`;
-      
-      preds.forEach(p=>{
-        const storageKey=("p:"+mk(p.date,p.match)+":"+p.name.trim().toLowerCase()).replace(/'/g,"\\'");
-        html+=`<div class="pred-card">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="color:#fff;font-size:12px;font-weight:600">
-                ${f(p.match.t1)} ${p.match.t1} vs ${p.match.t2} ${f(p.match.t2)}
+// ═══════════════════════════════════
+// RESULTS TAB — public transparency after match over
+// ═══════════════════════════════════
+function renderResults(){
+  document.getElementById("rStrip").innerHTML=stripHTML(rDate,"setRDate");
+  const matches=S[rDate]||[];let html="";
+  matches.forEach(m=>{
+    const res=loadResult(m.id);const isOver=over(m);
+    if(!isOver){
+      html+=`<div class="fcard"><div class="mhdr"><span class="gbadge">R32</span><span class="badge-ns">${m.time} ET</span></div><div style="font-weight:700;font-size:13px;margin-bottom:4px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#4A5568;font-size:11px">Results visible after match ends</div></div>`;
+      return;
+    }
+    if(!res){
+      html+=`<div class="fcard" style="border-color:#2A1A0A"><div class="mhdr"><span class="gbadge">R32</span><span class="badge-live">OVER · Fetching…</span></div><div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#F59E0B;font-size:11px;margin-top:6px">⏳ Result being fetched automatically…</div></div>`;
+      return;
+    }
+    // Match has result — show full transparency
+    const preds=loadMatchPreds(m.id).sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
+    const MEDALS=["🥇","🥈","🥉"];
+    html+=`<div class="res-match">
+      <div class="res-head">
+        <div class="mhdr"><span class="gbadge">R32 · ${m.venue}</span><span class="badge-ft">FULL TIME</span></div>
+        <div class="mteams" style="margin-bottom:8px">
+          <div class="tside"><span class="tflag">${f(m.t1)}</span><span class="tname">${m.t1}</span></div>
+          <div class="res-score"><div class="res-num">${res.sa}–${res.sb}</div>${res.extra_time==="Yes"?`<div style="color:#A78BFA;font-size:9px;font-weight:700">${res.penalties_q==="Yes"?`AET · Pen: ${res.penA}–${res.penB}`:"AET"}</div>`:""}</div>
+          <div class="tside right"><span class="tname">${m.t2}</span><span class="tflag">${f(m.t2)}</span></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${[["Winner",res.winner],["HT",res.ht_winner],["Goals",res.total_goals],
+             ["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],
+             ["Pen (90)",res.penalty_90],["ET",res.extra_time]
+          ].map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563;font-weight:600">${v}</span></span>`).join("")}
+        </div>
+      </div>
+      ${preds.length===0?`<div style="padding:14px;color:#4A5568;font-size:12px;text-align:center">No predictions for this match</div>`:
+        preds.map((p,i)=>{
+          const pts=calcScore(p,res);const maxP=maxPts(res);
+          const ptsColor=pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171";
+          return`<div class="player-row">
+            <div class="player-top">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:${i<3?16:13}px">${i<3?MEDALS[i]:`#${i+1}`}</span>
+                <span class="player-name">${p.name}</span>
+                <span style="background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:1px 8px;border-radius:12px">${p.sa}–${p.sb}${p.etA&&p.etA!==""?` (ET:${p.etA}–${p.etB})`:""}${p.penA&&p.penA!==""?` Pen:${p.penA}–${p.penB}`:""}</span>
               </div>
-              <div style="color:#4A5568;font-size:10px;margin-top:3px">
-                ${fmtDate(p.date)} · Predicted: ${p.sa}–${p.sb}
-              </div>
+              <div style="text-align:right"><span style="color:${ptsColor};font-weight:900;font-size:18px">${pts}</span><span style="color:#4A5568;font-size:10px">/${maxP}</span></div>
             </div>
-            <button onclick="delPredByKey('${storageKey}')" style="background:#1A0808;border:1px solid #3A1A1A;color:#F87171;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap">
-              🗑️ Delete
-            </button>
+            <div class="ans-grid">
+              ${Qs.map(q=>{
+                if(q.type==="score"||q.type==="et_score"||q.type==="pen_score") return "";
+                if(q.show&&!q.show(p.ans)) return "";
+                const val=q.type==="number"?p.ans[q.id]:p.ans[q.id];
+                if(val===undefined||val==="") return "";
+                const resVal=String(res[q.id]);
+                const ok=String(val)===resVal;
+                return`<span class="ans-item ${ok?"ans-ok":"ans-bad"}"><span class="ans-k">${q.label.split(" ").slice(-1)[0]}: </span>${val}${ok?" ✓":" ✗"}</span>`;
+              }).join("")}
+            </div>
+          </div>`;
+        }).join("")
+      }
+    </div>`;
+  });
+  if(!matches.length)html=`<div class="empty">No matches this day</div>`;
+  document.getElementById("rContent").innerHTML=html;
+}
+function setRDate(d){rDate=d;renderResults();}
+
+// ═══════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════
+function renderLeaderboard(){
+  const allRes=loadAllResults(),allPreds=loadAllPreds(),tally={};
+  allPreds.forEach(p=>{
+    const res=allRes[p.matchId],nm=p.name;
+    if(!tally[nm])tally[nm]={name:nm,total:0,matched:0,predicted:0};
+    tally[nm].predicted++;
+    const pts=calcScore(p,res);
+    if(pts!==null){tally[nm].total+=pts;tally[nm].matched++;}
+  });
+  const board=Object.values(tally).sort((a,b)=>b.total-a.total);
+  const MEDALS=["🥇","🥈","🥉"];
+  if(!board.length){document.getElementById("lbContent").innerHTML=`<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏆</div><strong>Scores appear after match results</strong><p style="color:#4A5568;font-size:12px;margin-top:8px">Auto-fetched after each match ends</p></div>`;return;}
+  let html=`<div style="background:#0D1A0D;border:2px solid #00D563;border-radius:12px;padding:12px;margin-bottom:14px"><div style="color:#00D563;font-size:12px;font-weight:800">📊 LIVE CUMULATIVE SCORES</div><div style="color:#4A5568;font-size:10px;margin-top:2px">Highest first · Auto-updates after each match</div></div>`;
+  board.forEach((p,i)=>{
+    const isMe=p.name.toLowerCase()===CUR.name.toLowerCase();
+    html+=`<div class="lbcard ${i===0?"gold":""}" style="${isMe?"outline:2px solid #60A5FA;outline-offset:2px":""}">
+      <div style="font-size:${i<3?19:14}px;min-width:28px;text-align:center">${i<3?MEDALS[i]:`<span style="color:#4A5568;font-weight:700;font-size:12px">#${i+1}</span>`}</div>
+      <div style="flex:1"><div style="color:${i===0?"#F59E0B":"#fff"};font-weight:700;font-size:14px">${p.name}${isMe?` <span style="color:#60A5FA;font-size:10px">(you)</span>`:""}</div>
+        <div style="color:#4A5568;font-size:10px;margin-top:1px">${p.matched}/${p.predicted} matches scored</div></div>
+      <div style="text-align:right"><div style="color:${i===0?"#F59E0B":"#00D563"};font-weight:900;font-size:20px">${p.total}</div><div style="color:#4A5568;font-size:9px">pts total</div></div>
+    </div>`;
+  });
+  document.getElementById("lbContent").innerHTML=html;
+}
+
+// ═══════════════════════════════════
+// ADMIN TAB
+// ═══════════════════════════════════
+function renderAdmin(){
+  document.getElementById("aStrip").innerHTML=stripHTML(aDate,"setADate");
+  document.getElementById("adminPredsStrip").innerHTML=stripHTML(adminPredsDate,"setAdminPredsDate");
+  renderAdminResults();renderAdminAllPreds();renderAdminUsers();
+}
+function setADate(d){aDate=d;renderAdminResults();}
+function setAdminPredsDate(d){adminPredsDate=d;renderAdminAllPreds();}
+
+function renderAdminResults(){
+  const matches=S[aDate]||[];let html="";
+  matches.forEach(m=>{
+    const res=loadResult(m.id);const isOver=over(m);
+    html+=`<div style="background:#111827;border:1.5px solid ${res?"#1A3A2A":"#1F2D42"};border-radius:12px;padding:11px;margin-bottom:9px">
+      <div class="mhdr"><span style="font-size:12px;font-weight:700">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</span>
+        ${res?`<span class="badge-ft">${res.sa}–${res.sb}${res.extra_time==="Yes"?" AET":""}</span>`:(isOver?`<span class="badge-live">OVER</span>`:`<span class="badge-ns">${m.time} ET</span>`)}
+      </div>
+      ${res?`<div style="color:#00D563;font-size:10px;margin-bottom:4px">✅ Result saved · Winner: ${res.winner}${res.extra_time==="Yes"?` (AET${res.penalties_q==="Yes"?` Pen ${res.penA}–${res.penB}`:""})`:""}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
+          ${[["Yellows",res.yellows],["Corners",res.corners],["Reds",res.red_cards],["HT",res.ht_winner],["Pen 90min",res.penalty_90]].map(([l,v])=>`<span class="pill"><span class="pill-k">${l}: </span><span style="color:#00D563">${v}</span></span>`).join("")}
+        </div>`
+        :(isOver?`<button onclick="manualFetchResult('${m.id}')" style="width:100%;background:#0D2E1E;border:1px solid #00D563;color:#00D563;border-radius:7px;padding:7px;font-size:11px;font-weight:700;cursor:pointer">🔄 Fetch Result Now</button>`
+        :`<div style="color:#4A5568;font-size:10px">Match starts ${m.time} ET</div>`)}
+    </div>`;
+  });
+  document.getElementById("adminResultsDiv").innerHTML=html||`<div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">No matches this day</div>`;
+}
+
+// Admin: full detailed view of all players' answers and scores
+function renderAdminAllPreds(){
+  const matches=S[adminPredsDate]||[];let html="";
+  matches.forEach(m=>{
+    const res=loadResult(m.id);
+    const preds=loadMatchPreds(m.id).sort((a,b)=>(calcScore(b,res)||0)-(calcScore(a,res)||0));
+    if(!preds.length){
+      html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:11px;padding:11px;margin-bottom:9px"><div style="font-weight:700;font-size:12px;margin-bottom:5px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div><div style="color:#4A5568;font-size:11px">No predictions yet</div></div>`;
+      return;
+    }
+    html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:11px;overflow:hidden;margin-bottom:12px">
+      <div style="background:#0D1525;padding:10px 14px;border-bottom:1px solid #1F2D42">
+        <div style="font-weight:700;font-size:13px">${f(m.t1)} ${m.t1} vs ${m.t2} ${f(m.t2)}</div>
+        ${res?`<div style="color:#00D563;font-size:11px;margin-top:3px">Final: ${res.sa}–${res.sb}${res.extra_time==="Yes"?` AET`:""}</div>`:`<div style="color:#4A5568;font-size:10px;margin-top:2px">Result pending</div>`}
+      </div>
+      ${preds.map((p,i)=>{
+        const pts=calcScore(p,res);const maxP=maxPts(res);
+        const MEDALS=["🥇","🥈","🥉"];
+        return`<div style="padding:10px 14px;border-bottom:1px solid #1F2D42">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:14px">${i<3?MEDALS[i]:`#${i+1}`}</span>
+              <span style="color:#00D563;font-weight:700;font-size:14px">${p.name}</span>
+              <span style="background:#0D2E1E;color:#00D563;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px">${p.sa}–${p.sb}${p.etA&&p.etA!==""?` ET:${p.etA}–${p.etB}`:""}${p.penA&&p.penA!==""?` Pen:${p.penA}–${p.penB}`:""}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${pts!==null?`<span style="color:${pts>=maxP*0.7?"#00D563":pts>=maxP*0.4?"#F59E0B":"#F87171"};font-weight:900;font-size:16px">${pts}/${maxP}</span>`:`<span style="color:#4A5568;font-size:11px">Pending</span>`}
+              <button onclick="delKey('pred:${m.id}:${p.name.toLowerCase()}')" style="background:#1A0808;border:1px solid #3A1A1A;color:#F87171;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">🗑️</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${Qs.map(q=>{
+              if(q.type==="score"||q.type==="et_score"||q.type==="pen_score") return "";
+              if(q.show&&!q.show(p.ans)) return "";
+              const val=q.type==="number"?p.ans[q.id]:p.ans[q.id];
+              if(val===undefined||val==="") return "";
+              const resVal=res?String(res[q.id]):null;
+              const ok=resVal&&String(val)===resVal;
+              const bad=resVal&&!ok;
+              return`<span class="ans-item ${ok?"ans-ok":bad?"ans-bad":""}"><span class="ans-k">${q.label.split(" ").slice(-1)[0]}: </span>${val}${ok?" ✓":bad?" ✗":""}</span>`;
+            }).join("")}
           </div>
         </div>`;
-      });
-      
-      // Delete all button if multiple predictions
-      if(preds.length>1){
-        html+=`<button onclick="deleteAllByName('${nm.replace(/'/g,"\\'")}')" style="width:100%;background:#1A0808;border:1px solid #3A1A1A;color:#F87171;border-radius:8px;padding:6px;font-size:11px;cursor:pointer;margin-top:6px">
-          🗑️ Delete ALL ${nm}'s predictions
-        </button>`;
-      }
-      html+=`</div>`;
-    });
-  }
-  document.getElementById("dupeContent").innerHTML=html;
+      }).join("")}
+    </div>`;
+  });
+  document.getElementById("adminAllPredsDiv").innerHTML=html||`<div style="color:#4A5568;font-size:12px;text-align:center;padding:16px">No predictions for this day</div>`;
 }
 
-function delPredByKey(storageKey){
-  if(confirm("Delete this prediction?")){
-    localStorage.removeItem(storageKey);
-    renderDuplicates();
-    renderLeaderboard("lbContent");
-    renderLeaderboard("lbContent2");
-  }
+function renderAdminUsers(){
+  const allPreds=loadAllPreds(),byUser={};
+  allPreds.forEach(p=>{const nm=p.name.toLowerCase();if(!byUser[nm])byUser[nm]={name:p.name,count:0};byUser[nm].count++;});
+  const regUsers=[];
+  for(const k in localStorage)if(k.startsWith("user:")){const d=JSON.parse(localStorage[k]);regUsers.push({name:d.displayName,pw:d.pw});}
+  let html=`<div style="color:#6B7A99;font-size:10px;margin-bottom:8px">Admin can reveal forgotten passwords</div>`;
+  regUsers.sort((a,b)=>a.name.localeCompare(b.name)).forEach(u=>{
+    const info=byUser[u.name.toLowerCase()]||{count:0};
+    html+=`<div style="background:#111827;border:1px solid #1F2D42;border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="color:#00D563;font-weight:700;font-size:13px">${u.name}</div><div style="color:#4A5568;font-size:10px">${info.count} prediction${info.count!==1?"s":""}</div></div>
+      <div style="display:flex;gap:6px">
+        <button onclick="revealPw('${u.name}','${u.pw}')" style="background:#1A2A3A;border:1px solid #1F3A52;color:#60A5FA;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">🔑 PW</button>
+        ${info.count>0?`<button onclick="delAllUser('${u.name.toLowerCase()}')" style="background:#1A0808;border:1px solid #3A1A1A;color:#F87171;border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer">🗑️ All</button>`:""}
+      </div>
+    </div>`;
+  });
+  if(!regUsers.length)html+=`<div style="color:#4A5568;font-size:12px;text-align:center;padding:12px">No users yet</div>`;
+  document.getElementById("adminUsersDiv").innerHTML=html;
 }
 
-function deleteAllByName(name){
-  if(!confirm("Delete ALL predictions by "+name+"?")) return;
-  const nameLower=name.trim().toLowerCase();
-  const toDelete=[];
-  for(const k in localStorage){
-    if(k.startsWith("p:")&&k.endsWith(":"+nameLower)){
-      toDelete.push(k);
-    }
-  }
-  toDelete.forEach(k=>localStorage.removeItem(k));
-  alert("✅ Deleted "+toDelete.length+" prediction"+(toDelete.length!==1?"s":"")+" by "+name);
-  renderDuplicates();
-  renderLeaderboard("lbContent");
-  renderLeaderboard("lbContent2");
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────
-renderPredict();
+function revealPw(name,pw){alert(`Password for ${name}:\n\n${pw}\n\nShare privately.`);}
+function delKey(key){if(!confirm("Delete this prediction?"))return;localStorage.removeItem(key);renderAdminAllPreds();renderAdminUsers();renderLeaderboard();}
+function delAllUser(nameLower){if(!confirm("Delete ALL predictions by "+nameLower+"?"))return;let c=0;for(const k in localStorage)if(k.startsWith("pred:")&&k.endsWith(":"+nameLower)){localStorage.removeItem(k);c++;}alert("✅ Deleted "+c+" predictions");renderAdminAllPreds();renderAdminUsers();renderLeaderboard();}
 </script>
 </body>
 </html>
