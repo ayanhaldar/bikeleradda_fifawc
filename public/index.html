@@ -1,73 +1,91 @@
-function showAdminUsers() {
-  let html = "";
-  let userKeys = Object.keys(localStorage).filter(k => k.startsWith("user:"));
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bikeler Adda – FIFA WC 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0A0E1A;color:#fff;min-height:100vh}
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
+.tabs{display:flex;background:#0D1525;border-bottom:1px solid #1F2D42;position:sticky;top:0;z-index:99}
+.tab{flex:1;padding:11px 3px;border:none;background:transparent;color:#4A5568;font-size:11px;font-weight:400;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.on{color:#fff;font-weight:700;border-bottom-color:#00D563}
+.dstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.dstrip::-webkit-scrollbar{display:none}
+.dbtn{flex-shrink:0;padding:5px 8px;}
+/* Admin Interface Elements */
+.admin-card{background:#0D1525;border:1px solid #1F2D42;border-radius:10px;padding:14px;margin-bottom:12px;}
+.user-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1F2D42;}
+.user-row:last-child{border-bottom:none;}
+.pw-box{margin-top:8px;background:#0A0E1A;border:1.5px solid #1F3A52;border-radius:8px;padding:10px;display:none;}
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab on" onclick="switchTab('predict')">🔮 Predict</button>
+  <button class="tab" onclick="switchTab('leaderboard')">🏆 Standings</button>
+  <button class="tab" onclick="switchTab('admin')">⚙️ Admin Control</button>
+</div>
+
+<div class="wrap" style="padding-top:14px;">
+  <div id="banner" style="display:none;padding:10px;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600;text-align:center;"></div>
+
+  <div id="tab-admin" style="display:none;">
+    <div class="admin-card">
+      <h3 style="margin-bottom:10px;font-size:16px;">System Re-Sync</h3>
+      <button onclick="adminRefresh()" style="background:#00D563;color:#000;border:none;padding:8px 14px;border-radius:6px;font-weight:700;cursor:pointer;width:100%;">🔄 Fetch & Sync All Users From Sheet</button>
+    </div>
+
+    <div class="admin-card">
+      <h3 style="margin-bottom:12px;font-size:16px;">Registered Users Database</h3>
+      <div id="adminUsersDiv"></div>
+    </div>
+  </div>
+
+  <div id="tab-predict">
+    <p style="color:#4A5568;">Select a date tab above to start making predictions.</p>
+  </div>
   
-  if (userKeys.length === 0) {
-    document.getElementById("adminUsersDiv").innerHTML = `<div class="empty">No synchronized users found on this device. Click "Refresh All".</div>`;
-    return;
-  }
+  <div id="tab-leaderboard" style="display:none;">
+    <p style="color:#4A5568;">Standings sync automatically with Google Sheets.</p>
+  </div>
+</div>
 
-  userKeys.forEach(k => {
-    let u = JSON.parse(localStorage.getItem(k));
-    if (!u || !u.displayName) return;
-    
-    // Create a safe HTML id element for toggling the password box
-    let safeId = "pw-" + u.displayName.toLowerCase().replace(/[^a-z0-9]/g, "");
+<script>
+// Replace with your verified Deployment Macro URL
+const SCRIPT_URL = "https://script.google.com/macros/s/1ZtHIMJ2rtX0Fn0QXrHW4Hlh-aVXDyAC-b7VtTPw5o4c/exec"; 
 
-    html += `
-    <div style="background:#0D1525; border:1px solid #1F2D42; border-radius:10px; padding:12px; margin-bottom:8px;">
-      <div style="display:flex; justify-content:between; align-items:center;">
-        <div>
-          <strong style="font-size:15px; color:#fff;">${u.displayName}</strong>
-        </div>
-        <div style="display:flex; gap:6px;">
-          <button onclick="togglePw('${safeId}')" style="background:#1A2A3A; border:none; color:#60A5FA; padding:5px 10px; border-radius:6px; font-size:11px; cursor:pointer;">🔑 View Pass</button>
-          <button onclick="deleteUserPermanently('${u.displayName}')" style="background:#2A1A1A; border:none; color:#F87171; padding:5px 10px; border-radius:6px; font-size:11px; cursor:pointer;">🗑️ Delete</button>
-        </div>
-      </div>
-      
-      <div id="${safeId}" style="margin-top:10px; background:#0A0E1A; border:1.5px solid #1F3A52; border-radius:8px; padding:10px; display:none">
-        <div style="color:#4A5568; font-size:10px; margin-bottom:4px">PASSWORD</div>
-        <div style="color:#00D563; font-size:22px; font-weight:900; letter-spacing:4px">${u.pw || 'N/A'}</div>
-        <div style="color:#4A5568; font-size:10px; margin-top:4px">Share this privately if they forgot it.</div>
-      </div>
-    </div>`;
-  });
-
-  document.getElementById("adminUsersDiv").innerHTML = html;
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  event.target.classList.add('on');
+  document.getElementById('tab-predict').style.display = t === 'predict' ? 'block' : 'none';
+  document.getElementById('tab-leaderboard').style.display = t === 'leaderboard' ? 'block' : 'none';
+  document.getElementById('tab-admin').style.display = t === 'admin' ? 'block' : 'none';
+  if(t === 'admin') showAdminUsers();
 }
 
-// Function to handle permanent account deletion from backend sheet + locally
-async function deleteUserPermanently(name) {
-  if (!confirm(`⚠️ CRITICAL WARNING!\n\nAre you sure you want to completely DELETE "${name}"?\nThis clears all their predictions from the Google Sheet and this app permanently.`)) return;
+function showBanner(msg, bg) {
+  const b = document.getElementById("banner");
+  b.style.display = "block";
+  b.style.background = bg;
+  b.innerText = msg;
+  setTimeout(() => { b.style.display = "none"; }, 5000);
+}
 
+// Fetches data down from Google Script and populates storage
+async function adminRefresh() {
+  showBanner("🔄 Syncing records with Google Sheet...", "#1F2D42");
   try {
-    // 1. Tell Google Sheets Backend to delete rows
-    let response = await fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "deleteUser", name: name })
-    });
-    let result = await response.json();
-
-    if (result.error) {
-      alert("❌ Error from backend: " + result.error);
-      return;
+    let r = await fetch(`${SCRIPT_URL}?action=loadAll`);
+    let d = await r.json();
+    if(d.users) {
+      d.users.forEach(u => {
+        localStorage.setItem("user:" + u.name.toLowerCase(), JSON.stringify({ displayName: u.name, pw: u.pw }));
+      });
+      showBanner(`✅ Local storage updated with ${d.users.length} active configurations.`, "#00D563");
+      showAdminUsers();
     }
-
-    // 2. Remove user entries locally from LocalStorage
-    let c = 0;
-    const nameLower = name.toLowerCase();
-    for (const k of Object.keys(localStorage)) {
-      if (k === "user:" + nameLower || (k.startsWith("pred:") && k.endsWith(":" + nameLower))) {
-        localStorage.removeItem(k);
-        c++;
-      }
-    }
-
-    alert(`✅ Completely removed ${name} from Google Sheet and cleared local cache files.`);
-    adminRefresh(); // re-sync / refresh admin view UI
   } catch(e) {
-    alert("❌ Connection failed. Check script permissions.");
-    console.error(e);
-  }
-}
+    showBanner("❌ Failed to reach backend
