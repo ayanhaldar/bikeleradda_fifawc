@@ -437,64 +437,78 @@ function over(m){return new Date()>=new Date(new Date(m.ko).getTime()+115*60000)
 function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
 function allMatches(){return Object.values(S).flat();}
 
-// ── SHEET API — JSONP for reads (bypasses CORS/redirect completely) ───────
+// ── SHEET API — Read from public CSV export, write via POST ───────────────
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1ZtHIMJ2rtX0Fn0QXrHW4Hlh-aVXDyAC-b7VtTPw5o4c/export?format=csv&gid=";
 const sheetReady = !!SCRIPT_URL && SCRIPT_URL.includes("script.google.com");
 
-// JSONP loader — uses <script> tag, never blocked by CORS
-function sheetGet(action, payload={}) {
-  return new Promise((resolve, reject) => {
-    if (!sheetReady) { resolve(null); return; }
-    const cbName = "_cb_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
-    const timer = setTimeout(() => {
-      delete window[cbName];
-      script.remove();
-      reject(new Error("timeout"));
-    }, 20000);
-    window[cbName] = (data) => {
-      clearTimeout(timer);
-      delete window[cbName];
-      script.remove();
-      resolve(data);
-    };
-    const script = document.createElement("script");
-    const p = new URLSearchParams({action, ...payload, callback: cbName, _t: Date.now()});
-    script.src = SCRIPT_URL + "?" + p.toString();
-    script.onerror = () => { clearTimeout(timer); delete window[cbName]; reject(new Error("script load failed")); };
-    document.head.appendChild(script);
-  });
+async function syncDown() {
+  setSyncUI(null);
+  try {
+    // Load Users (gid=0)
+    const usersCSV = await fetch(SHEET_URL + "0").then(r => r.text());
+    usersCSV.split("\n").slice(2).forEach(line => {
+      if (!line.trim()) return;
+      const [name, pw] = line.split(",").map(s => s.trim());
+      if (name) localStorage.setItem("user:" + name.toLowerCase(), JSON.stringify({displayName: name, pw}));
+    });
+    
+    // Load Predictions (gid=1)
+    const predsCSV = await fetch(SHEET_URL + "1").then(r => r.text());
+    predsCSV.split("\n").slice(2).forEach(line => {
+      if (!line.trim()) return;
+      const p = line.split("\t");
+      if (p.length < 5 || !p[1] || !p[2]) return;
+      const key = "pred:" + p[2] + ":" + p[1].toLowerCase();
+      localStorage.setItem(key, JSON.stringify({
+        name: p[1], matchId: p[2],
+        ans: {winner: p[5]||"", both_score: p[8]||"", total_goals: p[9]||"",
+          first_scorer: p[10]||"", ht_winner: p[11]||"", yellows: p[12]||"",
+          corners: p[13]||"", penalty_90: p[14]||"", red_cards: p[15]||"",
+          extra_time: p[16]||"", penalties_q: p[19]||""},
+        sa: p[6]||"", sb: p[7]||"", etA: p[17]||"", etB: p[18]||"",
+        penA: p[20]||"", penB: p[21]||"", savedAt: new Date(p[0]).getTime()||0
+      }));
+    });
+    
+    // Load Results (gid=2)
+    const resCSV = await fetch(SHEET_URL + "2").then(r => r.text());
+    resCSV.split("\n").slice(2).forEach(line => {
+      if (!line.trim()) return;
+      const p = line.split(",");
+      if (!p[0]) return;
+      localStorage.setItem("res:" + p[0].trim(), JSON.stringify({
+        sa: p[1]||"", sb: p[2]||"", winner: p[3]||"", both_score: p[4]||"",
+        total_goals: p[5]||"", first_scorer: p[6]||"", ht_winner: p[7]||"",
+        yellows: p[8]||"", corners: p[9]||"", penalty_90: p[10]||"",
+        red_cards: p[11]||"", extra_time: p[12]||"", etA: p[13]||"",
+        etB: p[14]||"", penalties_q: p[15]||"", penA: p[16]||"", penB: p[17]||""
+      }));
+    });
+    
+    setSyncUI(true);
+  } catch (e) {
+    console.error("Sync error:", e);
+    setSyncUI(false);
+  }
 }
 
 async function sheetCall(action, payload={}) {
   if (!sheetReady) return null;
   try {
-    // READS — JSONP (bypasses all CORS issues)
-    if (action==="loadAll"||action==="checkUser"||action==="fetchResults") {
-      return await sheetGet(action, payload);
-    }
-    // WRITES — no-cors POST (fire and forget)
     fetch(SCRIPT_URL, {method:"POST", mode:"no-cors", body:JSON.stringify({action,...payload})});
     return {success:true};
-  } catch(e) {
-    console.warn("Sheet API error:", action, e.message);
+  } catch (e) {
+    console.warn("POST error:", action, e.message);
     return null;
   }
 }
 
-async function syncDown() {
-  if (!sheetReady) { setSyncUI(false); return; }
-  setSyncUI(null);
-  try {
-    const data = await sheetCall("loadAll");
-    if (!data||data.error) { setSyncUI(false); return; }
-    Object.entries(data).forEach(([k,v]) => {
-      try {
-        const ex=localStorage.getItem(k), existing=ex?JSON.parse(ex):null;
-        const inS=v&&v.savedAt?v.savedAt:0, inL=existing&&existing.savedAt?existing.savedAt:0;
-        if (!existing||inS>=inL) localStorage.setItem(k, JSON.stringify(v));
-      } catch(e) {}
-    });
-    setSyncUI(true);
-  } catch(e) { setSyncUI(false); }
+function setSyncUI(ok) {
+  const dot=document.getElementById("syncDot"), txt=document.getElementById("syncText");
+  if (!dot) return;
+  if (ok===null) { dot.className="sync-dot busy"; txt.textContent="Syncing…"; }
+  else if (ok) { dot.className="sync-dot ok"; txt.textContent="Synced ✓"; }
+  else { dot.className="sync-dot"; txt.textContent=sheetReady?"Offline":"Local only"; }
 }
 
 // Push one prediction to Sheet (fire-and-forget)
