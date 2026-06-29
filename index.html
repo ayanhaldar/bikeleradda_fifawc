@@ -437,23 +437,45 @@ function over(m){return new Date()>=new Date(new Date(m.ko).getTime()+115*60000)
 function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
 function allMatches(){return Object.values(S).flat();}
 
-// ── SHEET API — GET for reads (CORS-safe), no-cors POST for writes ────────
+// ── SHEET API — JSONP for reads (bypasses CORS/redirect completely) ───────
 const sheetReady = !!SCRIPT_URL && SCRIPT_URL.includes("script.google.com");
+
+// JSONP loader — uses <script> tag, never blocked by CORS
+function sheetGet(action, payload={}) {
+  return new Promise((resolve, reject) => {
+    if (!sheetReady) { resolve(null); return; }
+    const cbName = "_cb_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    const timer = setTimeout(() => {
+      delete window[cbName];
+      script.remove();
+      reject(new Error("timeout"));
+    }, 20000);
+    window[cbName] = (data) => {
+      clearTimeout(timer);
+      delete window[cbName];
+      script.remove();
+      resolve(data);
+    };
+    const script = document.createElement("script");
+    const p = new URLSearchParams({action, ...payload, callback: cbName, _t: Date.now()});
+    script.src = SCRIPT_URL + "?" + p.toString();
+    script.onerror = () => { clearTimeout(timer); delete window[cbName]; reject(new Error("script load failed")); };
+    document.head.appendChild(script);
+  });
+}
 
 async function sheetCall(action, payload={}) {
   if (!sheetReady) return null;
   try {
+    // READS — JSONP (bypasses all CORS issues)
     if (action==="loadAll"||action==="checkUser"||action==="fetchResults") {
-      // READ: use GET — GAS always returns CORS headers for GET requests
-      const p = new URLSearchParams({action,...payload,_t:Date.now()});
-      const resp = await fetch(SCRIPT_URL+"?"+p.toString(),{cache:"no-store"});
-      return JSON.parse(await resp.text());
+      return await sheetGet(action, payload);
     }
-    // WRITE: no-cors POST (fire and forget — we don't need the response)
-    fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",body:JSON.stringify({action,...payload})});
+    // WRITES — no-cors POST (fire and forget)
+    fetch(SCRIPT_URL, {method:"POST", mode:"no-cors", body:JSON.stringify({action,...payload})});
     return {success:true};
   } catch(e) {
-    console.warn("Sheet API error:",action,e.message);
+    console.warn("Sheet API error:", action, e.message);
     return null;
   }
 }
@@ -466,9 +488,8 @@ async function syncDown() {
     if (!data||data.error) { setSyncUI(false); return; }
     Object.entries(data).forEach(([k,v]) => {
       try {
-        const ex = localStorage.getItem(k);
-        const existing = ex ? JSON.parse(ex) : null;
-        const inS = v&&v.savedAt?v.savedAt:0, inL = existing&&existing.savedAt?existing.savedAt:0;
+        const ex=localStorage.getItem(k), existing=ex?JSON.parse(ex):null;
+        const inS=v&&v.savedAt?v.savedAt:0, inL=existing&&existing.savedAt?existing.savedAt:0;
         if (!existing||inS>=inL) localStorage.setItem(k, JSON.stringify(v));
       } catch(e) {}
     });
@@ -565,22 +586,89 @@ async function autoFetchPending(){
 
 async function manualFetchResult(matchId){
   const m=allMatches().find(x=>x.id===matchId);if(!m)return;
-  const btn=event.target;btn.disabled=true;btn.textContent="🔄 Fetching…";
+  const btn=event.target;btn.disabled=true;btn.textContent="⏳ Fetching…";
   if(sheetReady){
-    await sheetCall("fetchResults");
+    const r=await sheetCall("fetchResults");
     await syncDown();
+    const res=lsLoadResult(matchId);
+    if(res){
+      btn.textContent="✅ Got it!";
+      renderAdminResults();renderResults();renderLeaderboard();renderPredict();
+      return;
+    }
   }
   btn.disabled=false;btn.textContent="🔄 Fetch Result Now";
-  const res=lsLoadResult(matchId);
-  if(res){
-    let msg=`${m.t1} ${res.sa}–${res.sb} ${m.t2}`;
-    if(res.extra_time==="Yes")msg+=` (AET${res.penalties_q==="Yes"?` Pen ${res.penA}–${res.penB}`:""})`;
-    alert("✅ Result saved!\n"+msg);
-  } else {
-    alert("Match not finished yet or result unavailable.");
-  }
-  renderAdminResults();renderLeaderboard();renderResults();renderPredict();
+  // Auto-fetch failed — open manual entry
+  openManualResult(matchId);
 }
+
+function openManualResult(matchId){
+  const m=allMatches().find(x=>x.id===matchId);if(!m)return;
+  document.getElementById("mrMatchId").value=matchId;
+  document.getElementById("mrTitle").textContent=m.t1+" vs "+m.t2;
+  document.getElementById("mrT1").textContent=f(m.t1)+" "+m.t1;
+  document.getElementById("mrT2").textContent=f(m.t2)+" "+m.t2;
+  document.getElementById("mrWinnerT1").textContent=f(m.t1)+" "+m.t1;
+  document.getElementById("mrWinnerT2").textContent=f(m.t2)+" "+m.t2;
+  document.getElementById("mrFirstT1").textContent=f(m.t1)+" "+m.t1;
+  document.getElementById("mrFirstT2").textContent=f(m.t2)+" "+m.t2;
+  document.getElementById("mrHtT1").textContent=f(m.t1)+" "+m.t1;
+  document.getElementById("mrHtT2").textContent=f(m.t2)+" "+m.t2;
+  // Reset form
+  ["mrSA","mrSB","mrYellows","mrCorners"].forEach(id=>document.getElementById(id).value="");
+  ["mrWinner","mrBothScore","mrTotalGoals","mrFirstScorer","mrHTWinner","mrPen90","mrRedCards","mrExtraTime","mrPenQ"].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value="";
+  });
+  document.getElementById("mrEtSection").style.display="none";
+  document.getElementById("mrPenSection").style.display="none";
+  document.getElementById("manualResultModal").classList.add("on");
+}
+
+function mrToggleET(){
+  const et=document.getElementById("mrExtraTime").value;
+  document.getElementById("mrEtSection").style.display=et==="Yes"?"block":"none";
+  document.getElementById("mrPenSection").style.display="none";
+}
+function mrTogglePen(){
+  const pen=document.getElementById("mrPenQ").value;
+  document.getElementById("mrPenSection").style.display=pen==="Yes"?"block":"none";
+}
+
+function saveManualResult(){
+  const matchId=document.getElementById("mrMatchId").value;
+  const m=allMatches().find(x=>x.id===matchId);
+  const sa=document.getElementById("mrSA").value;
+  const sb=document.getElementById("mrSB").value;
+  const winner=document.getElementById("mrWinner").value;
+  const both=document.getElementById("mrBothScore").value;
+  const goals=document.getElementById("mrTotalGoals").value;
+  const first=document.getElementById("mrFirstScorer").value;
+  const ht=document.getElementById("mrHTWinner").value;
+  const yellows=document.getElementById("mrYellows").value||0;
+  const corners=document.getElementById("mrCorners").value||0;
+  const pen90=document.getElementById("mrPen90").value;
+  const reds=document.getElementById("mrRedCards").value||0;
+  const et=document.getElementById("mrExtraTime").value;
+  const etA=document.getElementById("mrETA").value||"";
+  const etB=document.getElementById("mrETB").value||"";
+  const penQ=document.getElementById("mrPenQ").value||"No";
+  const penA=document.getElementById("mrPenA").value||"";
+  const penB=document.getElementById("mrPenB").value||"";
+  if(!sa||!sb||!winner){alert("Please fill in at least: Score and Winner");return;}
+  const result={sa,sb,winner,both_score:both||((+sa>0&&+sb>0)?"Yes":"No"),
+    total_goals:goals||_gcGoals(+sa+ +sb),
+    first_scorer:first||winner,ht_winner:ht||winner,
+    yellows:+yellows,corners:+corners,penalty_90:pen90||"No",red_cards:+reds,
+    extra_time:et||"No",etA,etB,penalties_q:penQ,penA,penB};
+  // Save locally
+  localStorage.setItem("res:"+matchId,JSON.stringify(result));
+  // Save to sheet (no-cors POST)
+  sheetCall("saveResult",{matchId,result:JSON.stringify(result)});
+  document.getElementById("manualResultModal").classList.remove("on");
+  showBanner("✅ "+m.t1+" "+sa+"–"+sb+" "+m.t2+" saved!","#00D563");
+  renderAdminResults();renderResults();renderLeaderboard();renderPredict();
+}
+function _gcGoals(n){return n<=1?"0–1":n<=3?"2–3":n<=5?"4–5":"6+";}
 
 // Admin refresh button
 async function adminRefresh(){
@@ -1189,5 +1277,117 @@ function revealPw(name,pw){alert(`Password for ${name}:\n\n${pw}`);}
 function delKey(key){if(!confirm("Delete this prediction?"))return;localStorage.removeItem(key);renderAdminAllPreds();renderLeaderboard();}
 function delAllUser(nameLower){delUser(nameLower);}
 </script>
+<!-- MANUAL RESULT ENTRY MODAL -->
+<div id="manualResultModal" class="modal">
+<div class="wrap" style="padding:14px;padding-bottom:40px">
+  <button onclick="document.getElementById('manualResultModal').classList.remove('on')" style="background:transparent;border:none;color:#6B7A99;font-size:20px;cursor:pointer;margin-bottom:10px;display:block">← Back</button>
+  <div class="hdr" style="padding:6px 0 14px">
+    <div style="color:#F59E0B;font-size:11px;font-weight:700;letter-spacing:1px">📝 ENTER MATCH RESULT</div>
+    <h2 style="font-size:18px;font-weight:800;margin-top:4px" id="mrTitle">Match</h2>
+  </div>
+  <input type="hidden" id="mrMatchId">
+  <!-- Scores -->
+  <div class="fcard">
+    <label class="flabel">FINAL SCORE (90 min)</label>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1;text-align:center"><div id="mrT1" style="color:#60A5FA;font-size:11px;font-weight:600;margin-bottom:4px"></div>
+        <input type="number" id="mrSA" min="0" max="20" placeholder="0" style="text-align:center;font-size:28px;font-weight:900;padding:10px 0"></div>
+      <span style="color:#4A5568;font-size:20px;font-weight:700">–</span>
+      <div style="flex:1;text-align:center"><div id="mrT2" style="color:#F87171;font-size:11px;font-weight:600;margin-bottom:4px"></div>
+        <input type="number" id="mrSB" min="0" max="20" placeholder="0" style="text-align:center;font-size:28px;font-weight:900;padding:10px 0"></div>
+    </div>
+  </div>
+  <!-- Winner -->
+  <div class="fcard">
+    <label class="flabel">MATCH WINNER</label>
+    <select id="mrWinner" style="font-size:14px">
+      <option value="">Select winner…</option>
+      <option id="mrWinnerT1"></option>
+      <option id="mrWinnerT2"></option>
+    </select>
+  </div>
+  <!-- Both score, Total goals -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+    <div class="fcard" style="margin-bottom:0">
+      <label class="flabel">BOTH TEAMS SCORE?</label>
+      <select id="mrBothScore" style="font-size:14px"><option value="Yes">Yes</option><option value="No">No</option></select>
+    </div>
+    <div class="fcard" style="margin-bottom:0">
+      <label class="flabel">TOTAL GOALS</label>
+      <select id="mrTotalGoals" style="font-size:14px">
+        <option value="0–1">0–1</option><option value="2–3">2–3</option>
+        <option value="4–5">4–5</option><option value="6+">6+</option>
+      </select>
+    </div>
+  </div>
+  <!-- First scorer, HT winner -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px">
+    <div class="fcard" style="margin-bottom:0">
+      <label class="flabel">FIRST GOAL BY</label>
+      <select id="mrFirstScorer" style="font-size:14px">
+        <option value="">Select…</option>
+        <option id="mrFirstT1"></option><option id="mrFirstT2"></option>
+        <option value="No goals">No goals</option>
+      </select>
+    </div>
+    <div class="fcard" style="margin-bottom:0">
+      <label class="flabel">HALF-TIME LEADER</label>
+      <select id="mrHTWinner" style="font-size:14px">
+        <option value="">Select…</option>
+        <option id="mrHtT1"></option>
+        <option value="Draw">Draw</option>
+        <option id="mrHtT2"></option>
+      </select>
+    </div>
+  </div>
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:9px;margin-top:9px">
+    <div class="fcard" style="margin-bottom:0;padding:10px">
+      <label class="flabel" style="font-size:9px">YELLOW CARDS</label>
+      <input type="number" id="mrYellows" min="0" max="20" placeholder="0" style="text-align:center;font-size:20px;font-weight:800;padding:6px 0">
+    </div>
+    <div class="fcard" style="margin-bottom:0;padding:10px">
+      <label class="flabel" style="font-size:9px">CORNERS</label>
+      <input type="number" id="mrCorners" min="0" max="30" placeholder="0" style="text-align:center;font-size:20px;font-weight:800;padding:6px 0">
+    </div>
+    <div class="fcard" style="margin-bottom:0;padding:10px">
+      <label class="flabel" style="font-size:9px">RED CARDS</label>
+      <input type="number" id="mrRedCards" min="0" max="5" placeholder="0" style="text-align:center;font-size:20px;font-weight:800;padding:6px 0">
+    </div>
+    <div class="fcard" style="margin-bottom:0;padding:10px">
+      <label class="flabel" style="font-size:9px">PEN (90min)</label>
+      <select id="mrPen90" style="font-size:13px"><option value="No">No</option><option value="Yes">Yes</option></select>
+    </div>
+  </div>
+  <!-- Extra time -->
+  <div class="fcard" style="margin-top:9px">
+    <label class="flabel">WENT TO EXTRA TIME?</label>
+    <select id="mrExtraTime" onchange="mrToggleET()" style="font-size:14px"><option value="No">No</option><option value="Yes">Yes</option></select>
+  </div>
+  <div id="mrEtSection" style="display:none">
+    <div class="fcard"><label class="flabel">SCORE AFTER ET (120 min)</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="number" id="mrETA" min="0" placeholder="0" style="flex:1;text-align:center;font-size:22px;font-weight:800;padding:8px 0">
+        <span style="color:#4A5568">–</span>
+        <input type="number" id="mrETB" min="0" placeholder="0" style="flex:1;text-align:center;font-size:22px;font-weight:800;padding:8px 0">
+      </div>
+    </div>
+    <div class="fcard"><label class="flabel">WENT TO PENALTIES?</label>
+      <select id="mrPenQ" onchange="mrTogglePen()" style="font-size:14px"><option value="No">No</option><option value="Yes">Yes</option></select>
+    </div>
+    <div id="mrPenSection" style="display:none">
+      <div class="fcard"><label class="flabel">PENALTY SCORE (goals scored)</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="number" id="mrPenA" min="0" placeholder="5" style="flex:1;text-align:center;font-size:22px;font-weight:800;padding:8px 0">
+          <span style="color:#4A5568">–</span>
+          <input type="number" id="mrPenB" min="0" placeholder="4" style="flex:1;text-align:center;font-size:22px;font-weight:800;padding:8px 0">
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-g" onclick="saveManualResult()" style="margin-top:14px;font-size:15px;padding:14px">✅ Save Result</button>
+</div>
+</div>
+
 </body>
 </html>
