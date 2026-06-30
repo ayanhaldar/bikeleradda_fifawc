@@ -437,54 +437,123 @@ function over(m){return new Date()>=new Date(new Date(m.ko).getTime()+115*60000)
 function fmtDate(d){const[y,mo,dy]=d.split("-");return new Date(+y,+mo-1,+dy).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
 function allMatches(){return Object.values(S).flat();}
 
-// ── SHEET API — Read from public CSV export, write via POST ───────────────
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/1ZtHIMJ2rtX0Fn0QXrHW4Hlh-aVXDyAC-b7VtTPw5o4c/export?format=csv&gid=";
+// ── SHEET API — gviz query by SHEET NAME (not gid) + column-name mapping ──
+// Why: tab order/gids are unpredictable, and your sheet's actual column
+// names differ from a fixed layout, so we map by HEADER TEXT, not position.
+const SHEET_ID_FOR_SYNC = "1ZtHIMJ2rtX0Fn0QXrHW4Hlh-aVXDyAC-b7VtTPw5o4c";
 const sheetReady = !!SCRIPT_URL && SCRIPT_URL.includes("script.google.com");
+
+// Fetch one tab as {headers:[...], rows:[[...],...]} using the gviz JSON API
+async function fetchTab(sheetName) {
+  const url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID_FOR_SYNC +
+    "/gviz/tq?tqx=out:json&sheet=" + encodeURIComponent(sheetName) + "&_t=" + Date.now();
+  const text = await fetch(url, {cache:"no-store"}).then(r => r.text());
+  // Response is wrapped: google.visualization.Query.setResponse({...});
+  const jsonStart = text.indexOf("{");
+  const jsonEnd   = text.lastIndexOf("}");
+  const data = JSON.parse(text.slice(jsonStart, jsonEnd+1));
+  const cols = (data.table.cols||[]).map(c => (c.label||"").trim());
+  const rows = (data.table.rows||[]).map(r =>
+    (r.c||[]).map(cell => cell && cell.v !== undefined && cell.v !== null ? String(cell.v) : "")
+  );
+  return {cols, rows};
+}
+
+// Build a {headerName: value} object per row, matched case-insensitively
+function rowsAsObjects(cols, rows) {
+  const norm = cols.map(c => c.toLowerCase().replace(/[^a-z0-9]/g,""));
+  return rows.map(r => {
+    const o = {};
+    norm.forEach((key, i) => { if(key) o[key] = r[i] !== undefined ? r[i] : ""; });
+    return o;
+  });
+}
+function pick(obj, ...keys) {
+  for (const k of keys) {
+    const nk = k.toLowerCase().replace(/[^a-z0-9]/g,"");
+    if (obj[nk] !== undefined && obj[nk] !== "") return obj[nk];
+  }
+  return "";
+}
 
 async function syncDown() {
   setSyncUI(null);
   try {
-    // Load Users (gid=0)
-    const usersCSV = await fetch(SHEET_URL + "0").then(r => r.text());
-    usersCSV.split("\n").slice(2).forEach(line => {
-      if (!line.trim()) return;
-      const [name, pw] = line.split(",").map(s => s.trim());
-      if (name) localStorage.setItem("user:" + name.toLowerCase(), JSON.stringify({displayName: name, pw}));
-    });
-    
-    // Load Predictions (gid=1)
-    const predsCSV = await fetch(SHEET_URL + "1").then(r => r.text());
-    predsCSV.split("\n").slice(2).forEach(line => {
-      if (!line.trim()) return;
-      const p = line.split("\t");
-      if (p.length < 5 || !p[1] || !p[2]) return;
-      const key = "pred:" + p[2] + ":" + p[1].toLowerCase();
-      localStorage.setItem(key, JSON.stringify({
-        name: p[1], matchId: p[2],
-        ans: {winner: p[5]||"", both_score: p[8]||"", total_goals: p[9]||"",
-          first_scorer: p[10]||"", ht_winner: p[11]||"", yellows: p[12]||"",
-          corners: p[13]||"", penalty_90: p[14]||"", red_cards: p[15]||"",
-          extra_time: p[16]||"", penalties_q: p[19]||""},
-        sa: p[6]||"", sb: p[7]||"", etA: p[17]||"", etB: p[18]||"",
-        penA: p[20]||"", penB: p[21]||"", savedAt: new Date(p[0]).getTime()||0
-      }));
-    });
-    
-    // Load Results (gid=2)
-    const resCSV = await fetch(SHEET_URL + "2").then(r => r.text());
-    resCSV.split("\n").slice(2).forEach(line => {
-      if (!line.trim()) return;
-      const p = line.split(",");
-      if (!p[0]) return;
-      localStorage.setItem("res:" + p[0].trim(), JSON.stringify({
-        sa: p[1]||"", sb: p[2]||"", winner: p[3]||"", both_score: p[4]||"",
-        total_goals: p[5]||"", first_scorer: p[6]||"", ht_winner: p[7]||"",
-        yellows: p[8]||"", corners: p[9]||"", penalty_90: p[10]||"",
-        red_cards: p[11]||"", extra_time: p[12]||"", etA: p[13]||"",
-        etB: p[14]||"", penalties_q: p[15]||"", penA: p[16]||"", penB: p[17]||""
-      }));
-    });
-    
+    // ── Users ──
+    try {
+      const {cols, rows} = await fetchTab("Users");
+      rowsAsObjects(cols, rows).forEach(o => {
+        const name = pick(o, "Name");
+        if (!name) return;
+        localStorage.setItem("user:" + name.toLowerCase(), JSON.stringify({
+          displayName: name, pw: pick(o, "PW", "Password")
+        }));
+      });
+    } catch(e) { console.warn("Users sync failed:", e.message); }
+
+    // ── Predictions ──
+    try {
+      const {cols, rows} = await fetchTab("Predictions");
+      rowsAsObjects(cols, rows).forEach(o => {
+        const name = pick(o,"Name"), matchId = pick(o,"MatchID");
+        if (!name || !matchId) return;
+        const key = "pred:" + matchId + ":" + name.toLowerCase();
+        const ts = pick(o,"Timestamp","SavedAt");
+        localStorage.setItem(key, JSON.stringify({
+          name, matchId,
+          ans: {
+            winner:       pick(o,"Winner"),
+            both_score:   pick(o,"BothTeamScore","BothScore"),
+            total_goals:  pick(o,"TotalGoals"),
+            first_scorer: pick(o,"FirstScorer"),
+            ht_winner:    pick(o,"HTWinner"),
+            yellows:      pick(o,"Yellows"),
+            corners:      pick(o,"Corners"),
+            penalty_90:   pick(o,"Penalty90"),
+            red_cards:    pick(o,"RedCards"),
+            extra_time:   pick(o,"ExtraTime"),
+            penalties_q:  pick(o,"Penalties","PenaltiesQ")
+          },
+          sa: pick(o,"ScoreL","SA"), sb: pick(o,"ScoreR","SB"),
+          etA: (pick(o,"ETScore").split(/[-–]/)[0]||"").trim(),
+          etB: (pick(o,"ETScore").split(/[-–]/)[1]||"").trim(),
+          penA: (pick(o,"PenScore").split(/[-–]/)[0]||"").trim(),
+          penB: (pick(o,"PenScore").split(/[-–]/)[1]||"").trim(),
+          savedAt: ts ? new Date(ts).getTime()||0 : 0
+        }));
+      });
+    } catch(e) { console.warn("Predictions sync failed:", e.message); }
+
+    // ── Results ──
+    try {
+      const {cols, rows} = await fetchTab("Results");
+      rowsAsObjects(cols, rows).forEach(o => {
+        const matchId = pick(o,"MatchID");
+        if (!matchId) return;
+        const etScore  = pick(o,"ETScore");
+        const penScore = pick(o,"PenScore");
+        localStorage.setItem("res:" + matchId, JSON.stringify({
+          sa: pick(o,"SA","ScoreL") || pick(o,"Score90").split(/[-–]/)[0]?.trim() || "",
+          sb: pick(o,"SB","ScoreR") || pick(o,"Score90").split(/[-–]/)[1]?.trim() || "",
+          winner:       pick(o,"Winner"),
+          both_score:   pick(o,"BothScore","BothTeamScore"),
+          total_goals:  pick(o,"TotalGoals"),
+          first_scorer: pick(o,"FirstScorer"),
+          ht_winner:    pick(o,"HTWinner"),
+          yellows:      pick(o,"Yellows"),
+          corners:      pick(o,"Corners"),
+          penalty_90:   pick(o,"Penalty90"),
+          red_cards:    pick(o,"RedCards"),
+          extra_time:   pick(o,"ExtraTime"),
+          etA: (etScore.split(/[-–]/)[0]||"").trim(),
+          etB: (etScore.split(/[-–]/)[1]||"").trim(),
+          penalties_q:  pick(o,"Penalties","PenaltiesQ"),
+          penA: (penScore.split(/[-–]/)[0]||"").trim(),
+          penB: (penScore.split(/[-–]/)[1]||"").trim()
+        }));
+      });
+    } catch(e) { console.warn("Results sync failed:", e.message); }
+
     setSyncUI(true);
   } catch (e) {
     console.error("Sync error:", e);
@@ -669,7 +738,7 @@ function saveManualResult(){
   const penA=document.getElementById("mrPenA").value||"";
   const penB=document.getElementById("mrPenB").value||"";
   if(!sa||!sb||!winner){alert("Please fill in at least: Score and Winner");return;}
-  const result={sa,sb,winner,both_score:both||((+sa>0&&+sb>0)?"Yes":"No"),
+  const result={sa,sb,t1:m.t1,t2:m.t2,winner,both_score:both||((+sa>0&&+sb>0)?"Yes":"No"),
     total_goals:goals||_gcGoals(+sa+ +sb),
     first_scorer:first||winner,ht_winner:ht||winner,
     yellows:+yellows,corners:+corners,penalty_90:pen90||"No",red_cards:+reds,
